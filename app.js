@@ -1,6 +1,6 @@
 /* =====================================================================
-   MesoForge — original hypertrophy training PWA
-   Autoregulated volume, RIR progression, deloads, analytics.
+   MesoForge — hypertrophy training PWA  (redesigned UI, same engine)
+   Autoregulated volume, RIR progression, deloads, progress analytics.
    All data stays on-device (IndexedDB). Export/import JSON backup.
    ===================================================================== */
 'use strict';
@@ -153,6 +153,23 @@ const RIR_RAMPS = [
   { id: '3-1', label: '3 → 1 RIR (conservative)', start: 3, end: 1 },
 ];
 
+/* ============================ inline icons ============================ */
+const I = {
+  play:  '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.87l11-6.5a1 1 0 0 0 0-1.74l-11-6.5A1 1 0 0 0 8 5.5z"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5 11-11"/></svg>',
+  swap:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>',
+  plus:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  dumbbell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg>',
+  lock:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  trend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>',
+  flame: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s5 4.5 5 9a5 5 0 0 1-10 0c0-1 .4-2 1-2.8C8 10 9 12 10 12c1.5 0 1-2.5.5-4C10 6 12 3.5 12 2z"/></svg>',
+  medal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="6"/><path d="M9 8.5L7 2h10l-2 6.5M12 12v4M10 14h4" opacity=".9"/></svg>',
+  cal:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/></svg>',
+};
+const icon = (name, cls='') => `<span class="${cls}" aria-hidden="true">${I[name] || ''}</span>`;
+const EQ_ABBR = { Barbell:'BB', Dumbbell:'DB', Machine:'MA', Cable:'CB', Bodyweight:'BW', Other:'—' };
+
 /* ============================ tiny utils ============================ */
 const $ = (sel, el=document) => el.querySelector(sel);
 const $$ = (sel, el=document) => [...el.querySelectorAll(sel)];
@@ -160,6 +177,7 @@ const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const round1 = (n) => Math.round(n * 10) / 10;
+const fmtK = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'k' : String(Math.round(n));
 
 function toast(msg) {
   const t = $('#toast');
@@ -350,7 +368,7 @@ function scheduleNextWeek(meso, finished) {
     return {
       exerciseId: en.exerciseId, muscle: en.muscle,
       targetSets: sets, targetRIR: rir, suggest,
-      sets: [], 
+      sets: [],
     };
   });
 
@@ -415,6 +433,7 @@ function switchTab(tab) {
   $$('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   $$('.view').forEach(v => v.classList.remove('active'));
   $('#view-' + tab).classList.add('active');
+  window.scrollTo(0, 0);
   render();
 }
 
@@ -450,10 +469,10 @@ function renderTrain() {
   if (!meso) {
     el.innerHTML = `
       <div class="empty-state card">
-        <div class="big">🏗️</div>
-        <p><strong>No active mesocycle.</strong></p>
-        <p class="muted">Build one to start training — pick a split, choose your exercises, and MesoForge will run your week-to-week progression.</p>
-        <button class="btn primary" id="btn-new-meso-empty">Create a mesocycle</button>
+        <div class="empty-art"><img src="icons/empty-hero.png" alt=""></div>
+        <h2>Let's build your first block.</h2>
+        <p>Pick a split, choose your exercises, and MesoForge runs your week-to-week volume and effort progression automatically.</p>
+        <button class="btn primary block" id="btn-new-meso-empty">Create a mesocycle</button>
       </div>`;
     $('#btn-new-meso-empty').onclick = () => { switchTab('plan'); openWizard(); };
     return;
@@ -464,52 +483,62 @@ function renderTrain() {
   const rir = targetRIR(meso, viewWeek);
   const deload = isDeload(meso, viewWeek);
 
+  const doneCount = mesoWorkouts(meso.id).filter(w => w.status === 'done').length;
+  const totalCount = meso.weeks * meso.days.length;
+  const pct = Math.round(100 * doneCount / totalCount);
+
+  // next session to do, in the *current* week
+  let nextDay = null;
+  for (let di = 0; di < meso.days.length; di++) {
+    const w = getWorkout(meso, cw, di);
+    if (w && w.status !== 'done') { nextDay = { w, di, name: meso.days[di].name }; break; }
+  }
+
   const weekPills = Array.from({ length: meso.weeks }, (_, i) => {
     const wk = i + 1;
-    const cls = ['week-pill', wk === viewWeek ? 'active' : '', wk === cw && wk !== viewWeek ? 'current' : ''].join(' ');
-    return `<button class="${cls}" data-week="${wk}">${isDeload(meso, wk) ? 'Deload' : 'Week ' + wk}</button>`;
+    const dl = isDeload(meso, wk);
+    const cls = ['week-pill', dl ? 'deload' : '', wk === viewWeek ? 'active' : '', wk === cw && wk !== viewWeek ? 'current' : ''].join(' ');
+    return `<button class="${cls}" data-week="${wk}">${dl ? 'Deload' : 'Week ' + wk}</button>`;
   }).join('');
 
+  const nextPendingIdx = meso.days.findIndex((_, di) => { const w = getWorkout(meso, viewWeek, di); return w && w.status !== 'done'; });
   const days = meso.days.map((day, di) => {
     const w = getWorkout(meso, viewWeek, di);
     const done = w && w.status === 'done';
     const ready = !!w;
+    const isNext = ready && !done && viewWeek === cw && di === nextPendingIdx;
     const totalSets = w ? w.entries.reduce((a, e) => a + (done ? e.sets.filter(s => s.done).length : e.targetSets), 0) : 0;
+    const ic = done ? 'check' : ready ? 'dumbbell' : 'lock';
     return `
-      <div class="card day-card ${done ? 'done' : ''} ${ready && !done && viewWeek === cw ? 'today' : ''}">
-        <div class="status-dot"></div>
-        <div style="flex:1">
-          <div class="title">${esc(day.name)}</div>
-          <div class="muted">${ready ? totalSets + ' sets · ' + (done ? 'completed' + (w.date ? ' ' + w.date : '') : 'ready') : 'unlocks after last week’s session'}</div>
+      <div class="day-card ${done ? 'done' : ''} ${isNext ? 'today' : ''} ${!ready ? 'day-locked' : ''}">
+        <div class="day-icon">${icon(ic)}</div>
+        <div class="day-main">
+          <div class="day-title">${esc(day.name)}</div>
+          <div class="day-meta">${ready ? totalSets + ' sets · ' + (done ? 'completed' + (w.date ? ' · ' + w.date : '') : isNext ? 'up next' : 'ready') : 'unlocks after last week’s session'}</div>
         </div>
-        ${ready && !done ? `<button class="btn primary small" data-start="${w.id}">${w.entries.some(e => e.sets.length) ? 'Resume' : 'Start'}</button>` : ''}
+        ${ready && !done ? `<button class="btn ${isNext ? 'primary' : 'ghost'} small" data-start="${w.id}">${w.entries.some(e => e.sets.length) ? 'Resume' : 'Start'}</button>` : ''}
         ${done ? `<button class="btn subtle small" data-view-workout="${w.id}">View</button>` : ''}
       </div>`;
   }).join('');
 
-  const doneCount = mesoWorkouts(meso.id).filter(w => w.status === 'done').length;
-  const totalCount = meso.weeks * meso.days.length;
-
   el.innerHTML = `
-    <div class="card">
-      <div class="row between">
-        <div>
-          <div class="hero-label">${esc(meso.name)}</div>
-          <div class="hero-number">${deload ? 'Deload' : 'Week ' + viewWeek}</div>
-          <div class="muted">${deload ? 'Half volume · light loads · leave ' + rir + '+ in the tank' : 'Target effort: ' + (rir === 0 ? '0 RIR — to the limit' : rir + ' RIR')}</div>
-        </div>
-        <div style="text-align:right">
-          <div class="stat-tile" style="min-width:100px">
-            <div class="v">${doneCount}<span class="muted" style="font-size:14px">/${totalCount}</span></div>
-            <div class="l">sessions done</div>
-          </div>
-        </div>
-      </div>
-      <div style="margin-top:12px" class="progress-track"><div class="progress-fill" style="width:${Math.round(100 * doneCount / totalCount)}%"></div></div>
+    <div class="today-hero">
+      <div class="hero-eyebrow">${esc(meso.name)}</div>
+      <div class="hero-title">${deload ? 'Deload' : 'Week ' + viewWeek}</div>
+      ${deload ? '<span class="hero-badge">Recovery week</span>' : ''}
+      <div class="hero-meta">${deload
+        ? `Half volume · light loads · leave ${rir}+ reps in the tank`
+        : `Target effort — ${rir === 0 ? '0 RIR, take sets to failure' : rir + ' reps in reserve'}`}</div>
+      <div class="progress-track" style="margin-top:14px"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="hero-meta" style="margin-top:7px">${doneCount} of ${totalCount} sessions complete · ${pct}%</div>
+      ${nextDay ? `<button class="btn primary block" id="btn-hero-start" style="margin-top:14px">${icon('play','ic')} ${nextDay.w.entries.some(e => e.sets.length) ? 'Resume' : 'Start'} ${esc(nextDay.name)}</button>` : ''}
     </div>
-    <div class="week-strip" style="margin-bottom:12px">${weekPills}</div>
-    ${days}`;
 
+    <div class="section-title">Schedule</div>
+    <div class="week-strip">${weekPills}</div>
+    <div style="margin-top:12px">${days}</div>`;
+
+  if (nextDay) $('#btn-hero-start').onclick = () => { S.activeWorkoutId = nextDay.w.id; switchTab('workout'); };
   $$('.week-pill', el).forEach(b => b.onclick = () => { S.planWeek = +b.dataset.week; renderTrain(); });
   $$('[data-start]', el).forEach(b => b.onclick = () => { S.activeWorkoutId = b.dataset.start; switchTab('workout'); });
   $$('[data-view-workout]', el).forEach(b => b.onclick = () => { S.activeWorkoutId = b.dataset.viewWorkout; switchTab('workout'); });
@@ -526,48 +555,57 @@ function renderWorkout() {
   const deload = isDeload(meso, w.week);
   const u = S.settings.units;
 
+  // workout completion (done sets / total target sets)
+  let doneSets = 0, targetTotal = 0;
+  w.entries.forEach(en => {
+    targetTotal += Math.max(en.targetSets, en.sets.length);
+    doneSets += en.sets.filter(s => s.done).length;
+  });
+  const wkPct = targetTotal ? Math.round(100 * doneSets / targetTotal) : 0;
+
   const blocks = w.entries.map((en, ei) => {
     const ex = exById(en.exerciseId);
+    const enDone = en.sets.length && en.sets.every(s => s.done) && en.sets.length >= en.targetSets;
     const setRows = Array.from({ length: Math.max(en.targetSets, en.sets.length) }, (_, si) => {
       const s = en.sets[si] || {};
-      const sug = en.suggest && !s.weight ? ` placeholder="${en.suggest.weight}"` : '';
-      const sugR = en.suggest && !s.reps ? ` placeholder="${en.suggest.reps}"` : '';
+      const sug = en.suggest && (s.weight == null) ? ` placeholder="${en.suggest.weight}"` : '';
+      const sugR = en.suggest && (s.reps == null) ? ` placeholder="${en.suggest.reps}"` : '';
       return `
         <div class="set-grid">
           <div class="set-num">${si + 1}</div>
-          <input type="number" inputmode="decimal" step="any" min="0" data-w="${ei}:${si}" value="${s.weight ?? ''}"${sug} ${readonly ? 'disabled' : ''} aria-label="weight">
-          <input type="number" inputmode="numeric" min="0" data-r="${ei}:${si}" value="${s.reps ?? ''}"${sugR} ${readonly ? 'disabled' : ''} aria-label="reps">
-          <div class="rir-cell">${en.targetRIR}${deload ? '+' : ''} RIR</div>
-          <button class="set-done-btn ${s.done ? 'done' : ''}" data-d="${ei}:${si}" ${readonly ? 'disabled' : ''} aria-label="mark set done">✓</button>
+          <input type="number" inputmode="decimal" step="any" min="0" class="${s.weight != null ? 'filled' : ''}" data-w="${ei}:${si}" value="${s.weight ?? ''}"${sug} ${readonly ? 'disabled' : ''} aria-label="weight">
+          <input type="number" inputmode="numeric" min="0" class="${s.reps != null ? 'filled' : ''}" data-r="${ei}:${si}" value="${s.reps ?? ''}"${sugR} ${readonly ? 'disabled' : ''} aria-label="reps">
+          <div class="rir-cell">${en.targetRIR}${deload ? '+' : ''}</div>
+          <button class="set-done-btn ${s.done ? 'done' : ''}" data-d="${ei}:${si}" ${readonly ? 'disabled' : ''} aria-label="mark set done">${icon('check')}</button>
         </div>`;
     }).join('');
 
     return `
-      <div class="card exercise-block">
+      <div class="card exercise-block ${enDone ? 'complete' : ''}">
         <div class="ex-head">
           <span class="ex-name">${esc(ex ? ex.name : 'Unknown')}</span>
           <span class="muscle-tag">${esc(en.muscle)}</span>
-          <span class="spacer"></span>
-          ${readonly ? '' : `<button class="icon-btn" data-swap="${ei}" title="Swap exercise">⇄</button>`}
+          ${readonly ? '' : `<button class="icon-btn" data-swap="${ei}" title="Swap exercise" aria-label="Swap exercise">${icon('swap')}</button>`}
         </div>
-        <div class="target-line">${en.targetSets} set${en.targetSets > 1 ? 's' : ''} · ${en.targetRIR}${deload ? '+' : ''} RIR target${en.suggest ? ` · last: ${en.suggest.weight}${u} × ${en.suggest.reps}` : ''}</div>
-        <div class="set-grid header"><div></div><div>${u === 'kg' ? 'KG' : 'LB'}</div><div>Reps</div><div>Effort</div><div></div></div>
+        <div class="target-line"><b>${en.targetSets} set${en.targetSets > 1 ? 's' : ''}</b> · ${en.targetRIR}${deload ? '+' : ''} RIR${en.suggest ? ` · last time <b>${en.suggest.weight}${u} × ${en.suggest.reps}</b>` : ''}</div>
+        <div class="set-grid header"><div>Set</div><div>${u === 'kg' ? 'Kg' : 'Lb'}</div><div>Reps</div><div>RIR</div><div></div></div>
         ${setRows}
-        ${readonly ? '' : `<button class="btn subtle small" data-addset="${ei}">+ Add set</button>`}
+        ${readonly ? '' : `<button class="btn subtle small addset" data-addset="${ei}">${icon('plus','ic')} Add set</button>`}
       </div>`;
   }).join('');
 
   el.innerHTML = `
-    <div class="row between" style="margin-bottom:12px">
-      <button class="btn subtle small" id="btn-back-train">‹ Back</button>
-      <div style="text-align:center">
+    <div class="wk-topbar">
+      <button class="btn subtle small" id="btn-back-train">${icon('chevL','ic')} Back</button>
+      <div class="t">
         <strong>${esc(day.name)}</strong>
-        <div class="muted small">${isDeload(meso, w.week) ? 'Deload' : 'Week ' + w.week} · ${w.status === 'done' ? 'completed' : 'in progress'}</div>
+        <div class="muted tiny">${isDeload(meso, w.week) ? 'Deload' : 'Week ' + w.week} · ${w.status === 'done' ? 'completed' : 'in progress'}</div>
       </div>
-      <span style="width:64px"></span>
+      <span style="width:72px"></span>
     </div>
+    ${readonly ? '' : `<div class="wk-progress"><div class="progress-track"><div class="progress-fill" style="width:${wkPct}%"></div></div><span class="lbl num">${doneSets}/${targetTotal} sets</span></div>`}
     ${blocks}
-    ${readonly ? '' : `<button class="btn primary block" id="btn-finish" style="margin-top:6px">Finish workout</button>`}`;
+    ${readonly ? '' : `<button class="btn primary block" id="btn-finish" style="margin-top:6px">${icon('check','ic')} Finish workout</button>`}`;
 
   $('#btn-back-train').onclick = () => switchTab('train');
 
@@ -579,6 +617,7 @@ function renderWorkout() {
       const en = w.entries[ei];
       while (en.sets.length <= si) en.sets.push({ weight: null, reps: null, done: false });
       en.sets[si][key] = inp.value === '' ? null : +inp.value;
+      inp.classList.toggle('filled', inp.value !== '');
       saveWorkout(w);
     });
   };
@@ -613,9 +652,9 @@ function renderWorkout() {
 function openSwapModal(w, ei) {
   const en = w.entries[ei];
   const options = S.exercises.filter(e => e.muscle === en.muscle)
-    .map(e => `<div class="lib-item" style="cursor:pointer" data-pick="${e.id}"><div style="flex:1"><div class="name">${esc(e.name)}</div><div class="eq">${esc(e.eq)}</div></div>${e.id === en.exerciseId ? '<span class="muted">current</span>' : ''}</div>`)
+    .map(e => `<div class="lib-item" style="cursor:pointer" data-pick="${e.id}"><div class="eq-icon">${EQ_ABBR[e.eq] || '—'}</div><div style="flex:1"><div class="name">${esc(e.name)}</div><div class="eq">${esc(e.eq)}</div></div>${e.id === en.exerciseId ? '<span class="badge active">current</span>' : ''}</div>`)
     .join('');
-  openModal(`<h2>Swap exercise — ${esc(en.muscle)}</h2><p class="muted small">Swaps apply to this session and all future weeks.</p>${options}`);
+  openModal(`<h2>Swap exercise</h2><p class="muted small">${esc(en.muscle)} · applies to this session and all future weeks.</p><div class="card flush" style="margin-top:12px">${options}</div>`);
   $$('[data-pick]').forEach(d => d.onclick = () => {
     const newId = d.dataset.pick;
     en.exerciseId = newId; en.suggest = null;
@@ -634,35 +673,33 @@ function openSwapModal(w, ei) {
 function openFeedbackModal(meso, w) {
   const muscles = [...new Set(w.entries.map(e => e.muscle))];
   const deload = isDeload(meso, w.week);
-  const fbSection = deload ? '<p class="muted">Deload week — no feedback needed. Enjoy the recovery.</p>' :
+  const fbSection = deload ? '<p class="muted">Deload week — no feedback needed. Enjoy the recovery. 🧘</p>' :
     muscles.map(m => `
-      <h3>${esc(m)}</h3>
-      <label class="field">Soreness before today
-        <div class="seg" data-fb="${m}:soreness">
+      <div class="fb-group">
+        <h3><span class="muscle-dot"></span>${esc(m)}</h3>
+        <div class="fb-label">Soreness coming in</div>
+        <div class="seg grow" data-fb="${m}:soreness">
           <button data-v="0">Healed early</button><button data-v="1">Just in time</button><button data-v="2">Still sore</button>
         </div>
-      </label>
-      <label class="field">Pump
-        <div class="seg" data-fb="${m}:pump">
+        <div class="fb-label">Pump</div>
+        <div class="seg grow" data-fb="${m}:pump">
           <button data-v="0">Low</button><button data-v="1">Decent</button><button data-v="2">Great</button>
         </div>
-      </label>
-      <label class="field">Workload
-        <div class="seg" data-fb="${m}:workload">
-          <button data-v="0">Easy</button><button data-v="1">Manageable</button><button data-v="2">Pushed limits</button><button data-v="3">Too much</button>
+        <div class="fb-label">Workload</div>
+        <div class="seg grow" data-fb="${m}:workload">
+          <button data-v="0">Easy</button><button data-v="1">Manageable</button><button data-v="2">Pushed</button><button data-v="3">Too much</button>
         </div>
-      </label>
-      <label class="field">Joints & connective tissue
-        <div class="seg" data-fb="${m}:joints">
+        <div class="fb-label">Joints &amp; connective tissue</div>
+        <div class="seg grow" data-fb="${m}:joints">
           <button data-v="0">Fresh</button><button data-v="1">A bit achy</button><button data-v="2">Painful</button>
         </div>
-      </label>`).join('');
+      </div>`).join('');
 
   openModal(`
     <h2>Finish workout</h2>
     <p class="muted small">${deload ? '' : 'Rate each muscle you trained — this drives next week’s set targets.'}</p>
     ${fbSection}
-    <button class="btn primary block" id="btn-confirm-finish" style="margin-top:10px">Save & finish</button>`);
+    <button class="btn primary block" id="btn-confirm-finish" style="margin-top:14px">Save &amp; finish</button>`);
 
   const fb = {};
   muscles.forEach(m => { if (!deload) fb[m] = { soreness: 1, pump: 1, workload: 1, joints: 0 }; });
@@ -699,26 +736,27 @@ function renderPlan() {
   const el = $('#view-plan');
   const list = S.mesos.slice().sort((a, b) => (b.created || '').localeCompare(a.created || ''));
   el.innerHTML = `
-    <button class="btn primary block" id="btn-new-meso">+ New mesocycle</button>
-    <div style="height:12px"></div>
-    ${list.length ? '' : '<p class="muted" style="text-align:center">No mesocycles yet.</p>'}
+    <button class="btn primary block" id="btn-new-meso">${icon('plus','ic')} New mesocycle</button>
+    <div style="height:14px"></div>
+    ${list.length ? '<div class="section-title">Your blocks</div>' : '<div class="empty-state"><div class="empty-art"><img src="icons/empty-hero.png" alt=""></div><p>No mesocycles yet. Create one to get started.</p></div>'}
     ${list.map(m => {
       const done = mesoWorkouts(m.id).filter(w => w.status === 'done').length;
       const total = m.weeks * m.days.length;
+      const badge = m.status === 'active' ? '<span class="badge active">Active</span>'
+                  : m.status === 'done' ? '<span class="badge done">Finished</span>' : '';
       return `
-      <div class="card">
+      <div class="card meso-card">
         <div class="row between">
-          <div>
-            <strong>${esc(m.name)}</strong>
-            <div class="muted small">${m.days.length} days/wk · ${m.weeks - 1} weeks + deload · ${done}/${total} sessions${m.status === 'done' ? ' · finished' : m.status === 'active' ? '' : ' · archived'}</div>
+          <div style="min-width:0">
+            <div class="meso-title">${esc(m.name)}</div>
+            <div class="meso-meta">${m.days.length} days/wk · ${m.weeks - 1} wks + deload · ${done}/${total} sessions</div>
           </div>
           <div class="row">
-            ${m.status === 'active'
-              ? '<span class="muscle-tag">active</span>'
-              : `<button class="btn small" data-activate="${m.id}">Activate</button>`}
-            <button class="btn small danger" data-del-meso="${m.id}">✕</button>
+            ${badge || `<button class="btn small" data-activate="${m.id}">Activate</button>`}
+            <button class="icon-btn" data-del-meso="${m.id}" aria-label="Delete" style="color:var(--over)">✕</button>
           </div>
         </div>
+        <div class="progress-track" style="margin-top:12px"><div class="progress-fill" style="width:${Math.round(100*done/total)}%"></div></div>
       </div>`;
     }).join('')}`;
 
@@ -731,13 +769,14 @@ function renderPlan() {
   $$('[data-del-meso]', el).forEach(b => b.onclick = () => {
     const m = S.mesos.find(x => x.id === b.dataset.delMeso);
     openModal(`<h2>Delete “${esc(m.name)}”?</h2><p class="muted">This removes the plan and all its logged workouts. This cannot be undone.</p>
-      <div class="row"><button class="btn block" id="btn-cancel-del">Cancel</button><button class="btn danger block" id="btn-do-del">Delete</button></div>`);
+      <div class="row" style="margin-top:14px"><button class="btn block" id="btn-cancel-del">Cancel</button><button class="btn danger block" id="btn-do-del" style="background:var(--over-weak)">Delete</button></div>`);
     $('#btn-cancel-del').onclick = closeModal;
     $('#btn-do-del').onclick = async () => {
+      const removed = mesoWorkouts(m.id);
       S.mesos = S.mesos.filter(x => x.id !== m.id);
       await idb.del('mesos', m.id);
-      for (const w of mesoWorkouts(m.id)) await idb.del('workouts', w.id);
-      S.workouts = S.workouts.filter(w => w.mesoId !== m.id);
+      for (const wk of removed) await idb.del('workouts', wk.id);
+      S.workouts = S.workouts.filter(wk => wk.mesoId !== m.id);
       closeModal(); render(); toast('Deleted');
     };
   });
@@ -760,12 +799,13 @@ function renderWizard() {
   const dots = `<div class="wizard-step-dots">${[0,1,2].map(i => `<span class="${i <= WIZ.step ? 'on' : ''}"></span>`).join('')}</div>`;
 
   if (WIZ.step === 0) {
-    openModal(`${dots}<h2>Pick a split</h2>
+    openModal(`${dots}<h2>Pick a split</h2><p class="muted small">How many days a week can you train?</p>
+      <div style="margin-top:12px">
       ${TEMPLATES.map(t => `
-        <div class="card" style="cursor:pointer;margin-bottom:10px" data-tpl="${t.id}">
+        <div class="card pick-card" data-tpl="${t.id}">
           <div class="row between"><strong>${esc(t.name)}</strong><span class="muscle-tag">${t.days} days</span></div>
-          <div class="muted small">${esc(t.blurb)}</div>
-        </div>`).join('')}`);
+          <div class="muted small" style="margin-top:4px">${esc(t.blurb)}</div>
+        </div>`).join('')}</div>`);
     $$('[data-tpl]').forEach(c => c.onclick = () => {
       WIZ.template = TEMPLATES.find(t => t.id === c.dataset.tpl);
       // build default slots
@@ -783,11 +823,11 @@ function renderWizard() {
   }
 
   if (WIZ.step === 1) {
-    openModal(`${dots}<h2>Length & name</h2>
+    openModal(`${dots}<h2>Length &amp; effort</h2>
       <label class="field">Mesocycle name
         <input type="text" id="wiz-name" placeholder="e.g. Summer block 1" value="${esc(WIZ.name)}">
       </label>
-      <label class="field">Length (accumulation weeks + deload)
+      <label class="field">Length
         <div class="seg" id="wiz-weeks">
           ${[4,5,6].map(n => `<button data-v="${n}" class="${WIZ.weeks === n ? 'active' : ''}">${n - 1} + deload</button>`).join('')}
         </div>
@@ -797,8 +837,8 @@ function renderWizard() {
           ${RIR_RAMPS.map(r => `<option value="${r.id}" ${WIZ.ramp === r.id ? 'selected' : ''}>${r.label}</option>`).join('')}
         </select>
       </label>
-      <p class="muted small">Effort ramps across the block, then a light deload week. Starting volume sits near each muscle's minimum effective dose and autoregulates upward from your feedback, capped at its weekly maximum.</p>
-      <div class="row"><button class="btn block" id="wiz-back">Back</button><button class="btn primary block" id="wiz-next">Next</button></div>`);
+      <p class="muted small">Effort ramps across the block, then a light deload week. Starting volume sits near each muscle’s minimum effective dose and autoregulates upward from your feedback, capped at its weekly maximum.</p>
+      <div class="row" style="margin-top:8px"><button class="btn block" id="wiz-back">Back</button><button class="btn primary block" id="wiz-next">Next</button></div>`);
     $$('#wiz-weeks button').forEach(b => b.onclick = () => {
       WIZ.weeks = +b.dataset.v;
       $$('#wiz-weeks button').forEach(x => x.classList.toggle('active', x === b));
@@ -817,7 +857,7 @@ function renderWizard() {
     <h3>${esc(day.name)}</h3>
     ${WIZ.slots[di].map((slot, si) => `
       <div class="slot-row">
-        <span class="muscle-tag" style="min-width:74px;text-align:center">${esc(slot.muscle)}</span>
+        <span class="muscle-tag" style="min-width:76px;text-align:center">${esc(slot.muscle)}</span>
         <select data-slot="${di}:${si}">
           ${S.exercises.filter(e => e.muscle === slot.muscle).map(e => `<option value="${e.id}" ${e.id === slot.exerciseId ? 'selected' : ''}>${esc(e.name)}</option>`).join('')}
         </select>
@@ -826,7 +866,7 @@ function renderWizard() {
   openModal(`${dots}<h2>Choose exercises</h2>
     <p class="muted small">Defaults are picked for you — change any slot. You can also swap mid-meso later.</p>
     ${daysHtml}
-    <div class="row" style="margin-top:12px"><button class="btn block" id="wiz-back">Back</button><button class="btn primary block" id="wiz-create">Create mesocycle</button></div>`);
+    <div class="row" style="margin-top:16px"><button class="btn block" id="wiz-back">Back</button><button class="btn primary block" id="wiz-create">Create mesocycle</button></div>`);
   $$('[data-slot]').forEach(sel => sel.onchange = () => {
     const [di, si] = sel.dataset.slot.split(':').map(Number);
     WIZ.slots[di][si].exerciseId = sel.value;
@@ -860,14 +900,15 @@ function renderLibrary() {
     .sort((a, b) => a.muscle === b.muscle ? a.name.localeCompare(b.name) : MUSCLES.indexOf(a.muscle) - MUSCLES.indexOf(b.muscle));
 
   el.innerHTML = `
-    <div class="chips" style="margin-bottom:12px">${chips}</div>
-    <button class="btn block" id="btn-add-ex">+ Add custom exercise</button>
-    <div class="card" style="margin-top:12px">
+    <div class="chips scroll" style="margin-bottom:12px">${chips}</div>
+    <button class="btn block" id="btn-add-ex">${icon('plus','ic')} Add custom exercise</button>
+    <div class="card flush" style="margin-top:12px">
       ${list.map(e => `
         <div class="lib-item">
+          <div class="eq-icon">${EQ_ABBR[e.eq] || '—'}</div>
           <div style="flex:1"><div class="name">${esc(e.name)}</div><div class="eq">${esc(e.muscle)} · ${esc(e.eq)}${e.custom ? ' · custom' : ''}</div></div>
-          ${e.custom ? `<button class="btn small danger" data-del-ex="${e.id}">✕</button>` : ''}
-        </div>`).join('') || '<p class="muted">Nothing here.</p>'}
+          ${e.custom ? `<button class="btn small danger" data-del-ex="${e.id}">Remove</button>` : ''}
+        </div>`).join('') || '<div style="padding:20px"><p class="muted" style="text-align:center;margin:0">Nothing here.</p></div>'}
     </div>`;
 
   $$('.chip', el).forEach(c => c.onclick = () => { S.libFilter = c.dataset.m; renderLibrary(); });
@@ -899,29 +940,94 @@ function renderProgress() {
   const el = $('#view-progress');
   const meso = activeMeso() || S.mesos.slice().sort((a,b) => (b.created||'').localeCompare(a.created||''))[0];
   if (!meso) {
-    el.innerHTML = '<div class="empty-state card"><div class="big">📈</div><p class="muted">Charts appear once you have a mesocycle going.</p></div>';
+    el.innerHTML = `<div class="empty-state card"><div class="empty-art"><img src="icons/empty-hero.png" alt=""></div><h2>No progress yet</h2><p>Charts and stats appear once you have a mesocycle underway.</p></div>`;
     return;
   }
   const loggedExIds = [...new Set(S.workouts.filter(w => w.status === 'done').flatMap(w => w.entries.map(e => e.exerciseId)))];
   if (!S.progressExercise || !loggedExIds.includes(S.progressExercise)) S.progressExercise = loggedExIds[0] || null;
 
+  // summary stats ----------------------------------------------------------
+  const doneCount = mesoWorkouts(meso.id).filter(w => w.status === 'done').length;
+  const totalCount = meso.weeks * meso.days.length;
+  const adherence = Math.round(100 * doneCount / totalCount);
+  const tonSeries = weeklyTonnage(meso);
+  const totalTon = tonSeries.reduce((a, d) => a + d.value, 0);
+  const cw = currentWeek(meso);
+  const weekSets = MUSCLES.reduce((a, m) => a + weeklyMuscleTotal(meso, cw, m), 0);
+  // best e1RM across everything logged
+  let bestE = 0, bestExId = null;
+  for (const w of S.workouts.filter(w => w.status === 'done')) {
+    for (const en of w.entries) for (const s of en.sets) if (s.done) {
+      const v = e1rm(s.weight || 0, s.reps || 0);
+      if (v > bestE) { bestE = v; bestExId = en.exerciseId; }
+    }
+  }
+  const bestExName = bestExId ? (exById(bestExId)?.name || '') : '';
+  const u = S.settings.units;
+
+  const statRow = `
+    <div class="stat-row" style="margin-bottom:14px">
+      <div class="stat-tile"><div class="v num">${adherence}<small>%</small></div><div class="l">Adherence · ${doneCount}/${totalCount}</div></div>
+      <div class="stat-tile"><div class="v num">${fmtK(totalTon)}<small> ${u}</small></div><div class="l">Total volume lifted</div>${tonSeries.some(d=>d.value)?`<div class="spark" id="spark-ton"></div>`:''}</div>
+      <div class="stat-tile"><div class="v num">${bestE ? round1(bestE) : '—'}<small>${bestE?' '+u:''}</small></div><div class="l">${bestE ? 'Best e1RM · ' + esc(bestExName) : 'Best e1RM'}</div></div>
+      <div class="stat-tile"><div class="v num">${weekSets}</div><div class="l">Working sets · wk ${cw}</div></div>
+    </div>`;
+
+  // muscle volume overview (current week vs MEV–MRV) ------------------------
+  const planMuscles = MUSCLES.filter(m => meso.days.some(d => d.slots.some(s => s.muscle === m)));
+  const volRows = planMuscles.map(m => {
+    const lm = VOLUME_LANDMARKS[m] || { mev: 6, mrv: 18 };
+    const sets = weeklyMuscleTotal(meso, cw, m);
+    const scaleMax = Math.max(lm.mrv * 1.15, sets, 1);
+    const status = sets < lm.mev ? 'under' : sets > lm.mrv ? 'over' : 'optimal';
+    const statusTxt = status === 'under' ? 'below MEV' : status === 'over' ? 'over MRV' : 'optimal';
+    const pctFill = Math.min(100, 100 * sets / scaleMax);
+    const zL = 100 * lm.mev / scaleMax, zR = 100 * lm.mrv / scaleMax;
+    return `
+      <div class="volume-row">
+        <div class="vol-muscle">${esc(m)}</div>
+        <div class="vol-track">
+          <div class="vol-zone" style="left:${zL}%;width:${zR - zL}%"></div>
+          <div class="vol-zone-line" style="left:${zL}%"></div>
+          <div class="vol-zone-line" style="left:${zR}%"></div>
+          <div class="vol-fill ${status}" style="width:${pctFill}%"></div>
+        </div>
+        <div class="vol-val num">${sets}<span class="st ${status}">${statusTxt}</span></div>
+      </div>`;
+  }).join('');
+
   const muscleChips = MUSCLES.map(m => `<button class="chip ${m === S.progressMuscle ? 'active' : ''}" data-pm="${m}">${m}</button>`).join('');
   const setsData = weeklySetsForMuscle(meso, S.progressMuscle);
-  const tonData = weeklyTonnage(meso);
   const trendData = S.progressExercise ? e1rmTrend(S.progressExercise) : [];
   const exOptions = loggedExIds.map(id => { const e = exById(id); return e ? `<option value="${id}" ${id === S.progressExercise ? 'selected' : ''}>${esc(e.name)}</option>` : ''; }).join('');
 
   el.innerHTML = `
+    ${statRow}
+
     <div class="card">
-      <h2>Weekly sets — ${esc(S.progressMuscle)}</h2>
-      <div class="chips" style="margin-bottom:10px">${muscleChips}</div>
-      <div id="chart-sets"></div>
-      <p class="muted small" style="margin:8px 0 0">Completed weeks show logged working sets; upcoming weeks show current targets.</p>
+      <h2>Weekly volume by muscle</h2>
+      <p class="muted small" style="margin:-4px 0 14px">Working sets this week (Week ${cw}) against each muscle’s recoverable range.</p>
+      <div class="volume-list">${volRows}</div>
+      <div class="legend">
+        <span><i style="background:var(--warn)"></i>Below MEV — add volume</span>
+        <span><i style="background:var(--accent)"></i>In range — optimal</span>
+        <span><i style="background:var(--over)"></i>Over MRV — ease off</span>
+        <span><i style="background:var(--good-weak);border:1px solid var(--good)"></i>MEV–MRV zone</span>
+      </div>
     </div>
+
     <div class="card">
-      <h2>Weekly tonnage (${S.settings.units})</h2>
+      <h2>Set progression — ${esc(S.progressMuscle)}</h2>
+      <div class="chips scroll" style="margin-bottom:12px">${muscleChips}</div>
+      <div id="chart-sets"></div>
+      <p class="muted small" style="margin:10px 0 0">Completed weeks show logged working sets; upcoming weeks show current targets. Shaded band = recoverable range.</p>
+    </div>
+
+    <div class="card">
+      <h2>Weekly tonnage <span class="muted" style="font-weight:600">(${u})</span></h2>
       <div id="chart-tonnage"></div>
     </div>
+
     <div class="card">
       <h2>Estimated 1RM</h2>
       ${loggedExIds.length ? `<label class="field"><select id="sel-ex">${exOptions}</select></label><div id="chart-e1rm"></div>` : '<p class="muted small">Log some workouts to see strength trends.</p>'}
@@ -934,15 +1040,19 @@ function renderProgress() {
   const lm = VOLUME_LANDMARKS[S.progressMuscle];
   barChart($('#chart-sets'), setsData, {
     unit: 'sets',
-    refLines: lm ? [{ value: lm.mev, label: 'min effective' }, { value: lm.mrv, label: 'max recoverable' }] : null,
+    zone: lm ? { min: lm.mev, max: lm.mrv } : null,
   });
-  barChart($('#chart-tonnage'), tonData, { unit: S.settings.units });
-  if (trendData.length) lineChart($('#chart-e1rm'), trendData, { unit: S.settings.units });
+  barChart($('#chart-tonnage'), weeklyTonnage(meso), { unit: u });
+  if (trendData.length) lineChart($('#chart-e1rm'), trendData, { unit: u });
   else if (loggedExIds.length) $('#chart-e1rm').innerHTML = '<p class="muted small">No completed sets for this exercise yet.</p>';
+
+  // sparkline on tonnage tile
+  const sp = $('#spark-ton');
+  if (sp) sparkline(sp, tonSeries.map(d => d.value));
 }
 
 /* --- minimal original SVG charts: thin marks, rounded data ends, hover tooltip --- */
-const CHART_H = 180, PAD = { t: 14, r: 10, b: 26, l: 36 };
+const CHART_H = 190, PAD = { t: 16, r: 12, b: 28, l: 38 };
 
 function niceMax(v) {
   if (v <= 0) return 4;
@@ -957,7 +1067,7 @@ function chartFrame(width, maxV) {
   const gy = (v) => PAD.t + innerH * (1 - v / maxV);
   const grid = ticks.map(t => `
     <line class="${t === 0 ? 'baseline-line' : 'gridline'}" x1="${PAD.l}" x2="${width - PAD.r}" y1="${gy(t)}" y2="${gy(t)}"/>
-    <text class="axis-label" x="${PAD.l - 6}" y="${gy(t) + 3.5}" text-anchor="end">${t >= 1000 ? Math.round(t / 1000) + 'k' : t}</text>`).join('');
+    <text class="axis-label" x="${PAD.l - 7}" y="${gy(t) + 3.5}" text-anchor="end">${t >= 1000 ? Math.round(t / 1000) + 'k' : t}</text>`).join('');
   return { innerW, innerH, gy, grid };
 }
 
@@ -977,16 +1087,28 @@ function attachTooltip(root, svg, items) {
   svg.addEventListener('pointerleave', hide);
 }
 
-function barChart(root, data, { unit, refLines } = {}) {
+function barChart(root, data, { unit, zone } = {}) {
   if (!root) return;
   root.classList.add('viz-root');
   const width = Math.max(root.clientWidth || 320, 280);
-  const refMax = refLines ? Math.max(...refLines.map(r => r.value)) : 0;
-  const maxV = niceMax(Math.max(...data.map(d => d.value), refMax, 1));
+  const zoneMax = zone ? zone.max : 0;
+  const maxV = niceMax(Math.max(...data.map(d => d.value), zoneMax, 1));
   const { innerW, gy, grid } = chartFrame(width, maxV);
   const n = data.length;
   const slot = innerW / n;
-  const bw = Math.min(26, slot * 0.55);
+  const bw = Math.min(28, slot * 0.56);
+
+  // shaded MEV–MRV zone band behind bars
+  let zoneEls = '';
+  if (zone) {
+    const yTop = gy(zone.max), yBot = gy(zone.min);
+    zoneEls = `
+      <rect class="zone-band" x="${PAD.l}" y="${yTop}" width="${width - PAD.l - PAD.r}" height="${Math.max(0, yBot - yTop)}"/>
+      <line class="zone-edge" x1="${PAD.l}" x2="${width - PAD.r}" y1="${yTop}" y2="${yTop}"/>
+      <line class="zone-edge" x1="${PAD.l}" x2="${width - PAD.r}" y1="${yBot}" y2="${yBot}"/>
+      <text class="axis-label" x="${width - PAD.r}" y="${yTop - 4}" text-anchor="end">MRV</text>
+      <text class="axis-label" x="${width - PAD.r}" y="${yBot + 12}" text-anchor="end">MEV</text>`;
+  }
 
   let bars = '', hits = [];
   data.forEach((d, i) => {
@@ -997,16 +1119,12 @@ function barChart(root, data, { unit, refLines } = {}) {
     bars += h > 0
       ? `<path d="M${x},${y0} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + bw - r},${y} Q${x + bw},${y} ${x + bw},${y + r} L${x + bw},${y0} Z" fill="var(--accent)"/>`
       : '';
-    bars += `<text class="axis-label" x="${x + bw / 2}" y="${CHART_H - 8}" text-anchor="middle">${esc(d.label)}</text>`;
+    bars += `<text class="axis-label" x="${x + bw / 2}" y="${CHART_H - 9}" text-anchor="middle">${esc(d.label)}</text>`;
     bars += `<rect data-hit="${i}" x="${PAD.l + slot * i}" y="${PAD.t}" width="${slot}" height="${CHART_H - PAD.t - PAD.b}" fill="transparent"/>`;
     hits.push({ i, x: x + bw / 2, y });
   });
 
-  const refs = (refLines || []).map(r => `
-    <line x1="${PAD.l}" x2="${width - PAD.r}" y1="${gy(r.value)}" y2="${gy(r.value)}" stroke="var(--ink-muted)" stroke-width="1" stroke-dasharray="4 4"/>
-    <text class="axis-label" x="${width - PAD.r}" y="${gy(r.value) - 4}" text-anchor="end">${esc(r.label)}</text>`).join('');
-
-  root.innerHTML = `<svg viewBox="0 0 ${width} ${CHART_H}" role="img" aria-label="bar chart">${grid}${bars}${refs}</svg>`;
+  root.innerHTML = `<svg viewBox="0 0 ${width} ${CHART_H}" role="img" aria-label="bar chart">${grid}${zoneEls}${bars}</svg>`;
   const svg = $('svg', root);
   attachTooltip(root, svg, hits.map(h => ({
     el: $(`[data-hit="${h.i}"]`, svg),
@@ -1025,9 +1143,10 @@ function lineChart(root, data, { unit } = {}) {
   const gx = (i) => n === 1 ? PAD.l + innerW / 2 : PAD.l + (innerW * i) / (n - 1);
 
   const path = data.map((d, i) => `${i ? 'L' : 'M'}${gx(i)},${gy(d.value)}`).join(' ');
+  const area = `${path} L${gx(n-1)},${gy(0)} L${gx(0)},${gy(0)} Z`;
   const dots = data.map((d, i) => `<circle cx="${gx(i)}" cy="${gy(d.value)}" r="4" fill="var(--accent)" stroke="var(--surface-1)" stroke-width="2"/>`).join('');
   const labels = data.map((d, i) => (n <= 6 || i === 0 || i === n - 1 || i % Math.ceil(n / 5) === 0)
-    ? `<text class="axis-label" x="${gx(i)}" y="${CHART_H - 8}" text-anchor="middle">${esc(d.label)}</text>` : '').join('');
+    ? `<text class="axis-label" x="${gx(i)}" y="${CHART_H - 9}" text-anchor="middle">${esc(d.label)}</text>` : '').join('');
   const hitRects = data.map((d, i) => {
     const x0 = i === 0 ? PAD.l : (gx(i - 1) + gx(i)) / 2;
     const x1 = i === n - 1 ? PAD.l + innerW : (gx(i) + gx(i + 1)) / 2;
@@ -1035,7 +1154,8 @@ function lineChart(root, data, { unit } = {}) {
   }).join('');
 
   root.innerHTML = `<svg viewBox="0 0 ${width} ${CHART_H}" role="img" aria-label="line chart">${grid}
-    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="${area}" fill="var(--accent-weak)" stroke="none"/>
+    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     ${dots}${labels}${hitRects}</svg>`;
   const svg = $('svg', root);
   attachTooltip(root, svg, data.map((d, i) => ({
@@ -1043,6 +1163,21 @@ function lineChart(root, data, { unit } = {}) {
     item: { label: d.label, text: `${d.value.toLocaleString()} ${unit || ''}` },
     x: gx(i) * (root.clientWidth ? root.clientWidth / width : 1), y: gy(d.value),
   })));
+}
+
+/* tiny sparkline for stat tiles */
+function sparkline(root, values) {
+  if (!root || !values.length) return;
+  const W = 100, H = 26, max = Math.max(...values, 1), min = Math.min(...values, 0);
+  const span = max - min || 1;
+  const n = values.length;
+  const gx = (i) => n === 1 ? W / 2 : (W * i) / (n - 1);
+  const gy = (v) => H - 3 - (H - 6) * (v - min) / span;
+  const path = values.map((v, i) => `${i ? 'L' : 'M'}${gx(i).toFixed(1)},${gy(v).toFixed(1)}`).join(' ');
+  root.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:26px;display:block">
+    <path d="${path} L${W},${H} L0,${H} Z" fill="var(--accent-weak)"/>
+    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>`;
 }
 
 /* ============================ settings / export ============================ */
@@ -1053,6 +1188,13 @@ function openSettings() {
       <div class="seg" id="set-units">
         <button data-v="lb" class="${S.settings.units === 'lb' ? 'active' : ''}">lb</button>
         <button data-v="kg" class="${S.settings.units === 'kg' ? 'active' : ''}">kg</button>
+      </div>
+    </label>
+    <label class="field">Theme
+      <div class="seg" id="set-theme">
+        <button data-v="auto" class="${(S.settings.theme||'auto') === 'auto' ? 'active' : ''}">Auto</button>
+        <button data-v="light" class="${S.settings.theme === 'light' ? 'active' : ''}">Light</button>
+        <button data-v="dark" class="${S.settings.theme === 'dark' ? 'active' : ''}">Dark</button>
       </div>
     </label>
     <h3>Backup</h3>
@@ -1069,6 +1211,10 @@ function openSettings() {
     S.settings.units = b.dataset.v; saveSettings();
     $$('#set-units button').forEach(x => x.classList.toggle('active', x === b));
     render();
+  });
+  $$('#set-theme button').forEach(b => b.onclick = () => {
+    S.settings.theme = b.dataset.v; saveSettings(); applyTheme();
+    $$('#set-theme button').forEach(x => x.classList.toggle('active', x === b));
   });
 
   $('#btn-export').onclick = () => {
@@ -1093,6 +1239,7 @@ function openSettings() {
       for (const x of S.mesos) await idb.put('mesos', x);
       for (const x of S.workouts) await idb.put('workouts', x);
       await saveSettings();
+      applyTheme();
       closeModal(); render(); toast('Backup restored');
     } catch { toast('Could not read that file'); }
   };
@@ -1121,4 +1268,4 @@ async function main() {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 }
-main();
+if (!(typeof window !== 'undefined' && window.__MF_NOBOOT)) main();

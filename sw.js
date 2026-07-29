@@ -1,5 +1,5 @@
 /* MesoForge service worker — cache-first app shell for offline use */
-const CACHE = 'mesoforge-v2';
+const CACHE = 'mesoforge-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -7,7 +7,8 @@ const ASSETS = [
   './app.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icons/icon-512.png',
+  './icons/empty-hero.png'
 ];
 
 self.addEventListener('install', (e) => {
