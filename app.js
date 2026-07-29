@@ -550,7 +550,7 @@ function renderTrain() {
 
     <div class="section-title">Schedule</div>
     <div class="week-strip">${weekPills}</div>
-    <div style="margin-top:12px">${days}</div>
+    <div class="day-list" style="margin-top:12px">${days}</div>
 
     <div class="section-title" style="margin-top:22px">This week’s volume</div>
     <div class="card">
@@ -995,10 +995,10 @@ function renderProgress() {
 
   const statRow = `
     <div class="stat-row" style="margin-bottom:14px">
-      <div class="stat-tile"><div class="v num">${adherence}<small>%</small></div><div class="l">Adherence · ${doneCount}/${totalCount}</div></div>
-      <div class="stat-tile"><div class="v num">${fmtK(totalTon)}<small> ${u}</small></div><div class="l">Total volume lifted</div>${tonSeries.some(d=>d.value)?`<div class="spark" id="spark-ton"></div>`:''}</div>
-      <div class="stat-tile"><div class="v num">${bestE ? round1(bestE) : '—'}<small>${bestE?' '+u:''}</small></div><div class="l">${bestE ? 'Best e1RM · ' + esc(bestExName) : 'Best e1RM'}</div></div>
-      <div class="stat-tile"><div class="v num">${weekSets}</div><div class="l">Working sets · wk ${cw}</div></div>
+      <div class="stat-tile"><div class="v num"><span class="cv" data-count="${adherence}" data-fmt="int">0</span><small>%</small></div><div class="l">Adherence · ${doneCount}/${totalCount}</div></div>
+      <div class="stat-tile"><div class="v num"><span class="cv" data-count="${totalTon}" data-fmt="k">0</span><small> ${u}</small></div><div class="l">Total volume lifted</div>${tonSeries.some(d=>d.value)?`<div class="spark" id="spark-ton"></div>`:''}</div>
+      <div class="stat-tile"><div class="v num">${bestE ? `<span class="cv" data-count="${round1(bestE)}" data-fmt="dec">0</span><small> ${u}</small>` : '—'}</div><div class="l">${bestE ? 'Best e1RM · ' + esc(bestExName) : 'Best e1RM'}</div></div>
+      <div class="stat-tile"><div class="v num"><span class="cv" data-count="${weekSets}" data-fmt="int">0</span></div><div class="l">Working sets · wk ${cw}</div></div>
     </div>`;
 
   // muscle volume overview (current week vs MEV–MRV) ------------------------
@@ -1051,14 +1051,16 @@ function renderProgress() {
       <p class="muted small" style="margin:10px 0 0">Completed weeks show logged working sets; upcoming weeks show current targets. Shaded band = recoverable range.</p>
     </div>
 
-    <div class="card">
-      <h2>Weekly tonnage <span class="muted" style="font-weight:600">(${u})</span></h2>
-      <div id="chart-tonnage"></div>
-    </div>
+    <div class="progress-cols">
+      <div class="card">
+        <h2>Weekly tonnage <span class="muted" style="font-weight:600">(${u})</span></h2>
+        <div id="chart-tonnage"></div>
+      </div>
 
-    <div class="card">
-      <h2>Estimated 1RM</h2>
-      ${loggedExIds.length ? `<label class="field"><select id="sel-ex">${exOptions}</select></label><div id="chart-e1rm"></div>` : '<p class="muted small">Log some workouts to see strength trends.</p>'}
+      <div class="card">
+        <h2>Estimated 1RM</h2>
+        ${loggedExIds.length ? `<label class="field"><select id="sel-ex">${exOptions}</select></label><div id="chart-e1rm"></div>` : '<p class="muted small">Log some workouts to see strength trends.</p>'}
+      </div>
     </div>`;
 
   $$('[data-pm]', el).forEach(c => c.onclick = () => { S.progressMuscle = c.dataset.pm; renderProgress(); });
@@ -1077,6 +1079,8 @@ function renderProgress() {
   // sparkline on tonnage tile
   const sp = $('#spark-ton');
   if (sp) sparkline(sp, tonSeries.map(d => d.value));
+
+  runCountUps(el);
 }
 
 /* --- minimal original SVG charts: thin marks, rounded data ends, hover tooltip --- */
@@ -1145,7 +1149,7 @@ function barChart(root, data, { unit, zone } = {}) {
     const h = Math.max(y0 - y, 0);
     const r = Math.min(4, bw / 2, h);
     bars += h > 0
-      ? `<path d="M${x},${y0} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + bw - r},${y} Q${x + bw},${y} ${x + bw},${y + r} L${x + bw},${y0} Z" fill="var(--accent)"/>`
+      ? `<path class="bar" style="animation-delay:${i * 45}ms" d="M${x},${y0} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + bw - r},${y} Q${x + bw},${y} ${x + bw},${y + r} L${x + bw},${y0} Z" fill="var(--accent)"/>`
       : '';
     bars += `<text class="axis-label" x="${x + bw / 2}" y="${CHART_H - 9}" text-anchor="middle">${esc(d.label)}</text>`;
     bars += `<rect data-hit="${i}" x="${PAD.l + slot * i}" y="${PAD.t}" width="${slot}" height="${CHART_H - PAD.t - PAD.b}" fill="transparent"/>`;
@@ -1172,7 +1176,7 @@ function lineChart(root, data, { unit } = {}) {
 
   const path = data.map((d, i) => `${i ? 'L' : 'M'}${gx(i)},${gy(d.value)}`).join(' ');
   const area = `${path} L${gx(n-1)},${gy(0)} L${gx(0)},${gy(0)} Z`;
-  const dots = data.map((d, i) => `<circle cx="${gx(i)}" cy="${gy(d.value)}" r="4" fill="var(--accent)" stroke="var(--surface-1)" stroke-width="2"/>`).join('');
+  const dots = data.map((d, i) => `<circle class="dot" style="animation-delay:${300 + i * 70}ms" cx="${gx(i)}" cy="${gy(d.value)}" r="4" fill="var(--accent)" stroke="var(--surface-1)" stroke-width="2"/>`).join('');
   const labels = data.map((d, i) => (n <= 6 || i === 0 || i === n - 1 || i % Math.ceil(n / 5) === 0)
     ? `<text class="axis-label" x="${gx(i)}" y="${CHART_H - 9}" text-anchor="middle">${esc(d.label)}</text>` : '').join('');
   const hitRects = data.map((d, i) => {
@@ -1182,8 +1186,8 @@ function lineChart(root, data, { unit } = {}) {
   }).join('');
 
   root.innerHTML = `<svg viewBox="0 0 ${width} ${CHART_H}" role="img" aria-label="line chart">${grid}
-    <path d="${area}" fill="var(--accent-weak)" stroke="none"/>
-    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    <path class="area" d="${area}" fill="var(--accent-weak)" stroke="none"/>
+    <path class="line" pathLength="1" d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     ${dots}${labels}${hitRects}</svg>`;
   const svg = $('svg', root);
   attachTooltip(root, svg, data.map((d, i) => ({
@@ -1203,9 +1207,31 @@ function sparkline(root, values) {
   const gy = (v) => H - 3 - (H - 6) * (v - min) / span;
   const path = values.map((v, i) => `${i ? 'L' : 'M'}${gx(i).toFixed(1)},${gy(v).toFixed(1)}`).join(' ');
   root.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:26px;display:block">
-    <path d="${path} L${W},${H} L0,${H} Z" fill="var(--accent-weak)"/>
-    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <path class="area" d="${path} L${W},${H} L0,${H} Z" fill="var(--accent-weak)"/>
+    <path class="spark-line" pathLength="1" d="${path}" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
   </svg>`;
+}
+
+/* count-up animation for stat numbers */
+const REDUCE_MOTION = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+function countUp(node, to, fmt = (v) => Math.round(v)) {
+  if (REDUCE_MOTION() || !node) { if (node) node.textContent = fmt(to); return; }
+  const dur = 700, start = performance.now();
+  const tick = (t) => {
+    const p = Math.min(1, (t - start) / dur);
+    const e = 1 - Math.pow(1 - p, 3); // easeOutCubic
+    node.textContent = fmt(to * e);
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+function runCountUps(root) {
+  $$('.cv[data-count]', root).forEach(n => {
+    const to = +n.dataset.count;
+    const f = n.dataset.fmt;
+    const fmt = f === 'k' ? fmtK : f === 'dec' ? (v => round1(v)) : (v => Math.round(v));
+    countUp(n, to, fmt);
+  });
 }
 
 /* ============================ settings / export ============================ */
