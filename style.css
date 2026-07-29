@@ -606,6 +606,41 @@ label.field > * { margin-top: 6px; }
   .day-card:hover { border-color: var(--border-2); transform: translateY(-1px); box-shadow: var(--shadow-2); }
 }
 
+/* ---------------- rest timer pill ---------------- */
+.rest-pill {
+  position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(16px); z-index: 55;
+  display: flex; align-items: center; gap: 9px;
+  background: var(--surface-1); border: 1px solid var(--border-2); border-radius: var(--r-pill);
+  padding: 9px 9px 11px 15px; box-shadow: var(--shadow-2);
+  opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s;
+}
+.rest-pill.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+.rest-pill .rt-lbl { font-size: 12px; font-weight: 650; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; }
+.rest-pill .rt-time { font-weight: 750; font-size: 15.5px; min-width: 44px; font-variant-numeric: tabular-nums; }
+.rest-pill.done { border-color: var(--good); }
+.rest-pill.done .rt-time, .rest-pill.done .rt-lbl { color: var(--good); }
+.rest-pill .rt-skip { width: 28px; height: 28px; border: none; background: var(--surface-2); border-radius: 50%; color: var(--ink-muted); cursor: pointer; display: grid; place-items: center; font-size: 13px; }
+.rest-pill .rt-skip:active { transform: scale(.9); }
+.rest-pill .rt-bar { position: absolute; left: 15px; right: 15px; bottom: 5px; height: 2px; border-radius: 2px; background: var(--surface-3); overflow: hidden; }
+.rest-pill .rt-bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 2px; transition: width .25s linear; }
+.rest-pill.done .rt-bar i { background: var(--good); }
+
+/* ---------------- finish celebration ---------------- */
+.celebrate { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; pointer-events: none; opacity: 0; transition: opacity .25s; }
+.celebrate.show { opacity: 1; }
+.cel-card { position: relative; z-index: 1; text-align: center; transform: scale(.82); transition: transform .32s cubic-bezier(.2,1.5,.4,1); }
+.celebrate.show .cel-card { transform: scale(1); }
+.cel-check { width: 86px; height: 86px; margin: 0 auto 14px; border-radius: 50%; background: var(--good); display: grid; place-items: center; box-shadow: 0 10px 34px rgba(26,157,77,.42); }
+.cel-check svg { width: 46px; height: 46px; fill: none; stroke: #fff; stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.celebrate.show .cel-check svg { animation: drawCheck .5s ease .16s forwards; }
+@keyframes drawCheck { to { stroke-dashoffset: 0; } }
+.cel-title { font-size: 23px; font-weight: 800; letter-spacing: -.02em; color: var(--ink-1); }
+.cel-sub { margin-top: 3px; }
+.confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.confetti i { position: absolute; top: -14px; width: 9px; height: 15px; border-radius: 2px; opacity: .92; animation: confFall linear forwards; }
+@keyframes confFall { to { transform: translateY(112vh) rotate(720deg); opacity: .15; } }
+
 .toast {
   position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + 18px + env(safe-area-inset-bottom));
   transform: translateX(-50%) translateY(10px); z-index: 60;

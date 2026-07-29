@@ -433,6 +433,7 @@ function e1rmTrend(exerciseId) {
 /* ============================ router / shell ============================ */
 function switchTab(tab) {
   S.tab = tab;
+  if (tab !== 'workout') Rest.stop();
   $$('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   $$('.view').forEach(v => v.classList.remove('active'));
   $('#view-' + tab).classList.add('active');
@@ -685,7 +686,8 @@ function renderWorkout() {
     if (nowDone) {
       flash(btn, 'pop');
       flash(btn.closest('.set-grid'), 'flash');
-      if (enDone && !wasComplete) flash(block, 'jc');
+      if (enDone && !wasComplete) { flash(block, 'jc'); haptic([8, 30, 8]); } else { haptic(9); }
+      Rest.start();
     }
     updateWkProgress();
   });
@@ -777,10 +779,14 @@ function openFeedbackModal(meso, w) {
     // meso complete?
     const doneAll = mesoWorkouts(meso.id).filter(x => x.status === 'done').length >= meso.weeks * meso.days.length;
     if (doneAll) { meso.status = 'done'; saveMeso(meso); }
+    Rest.stop();
     closeModal();
     S.planWeek = null;
-    toast(doneAll ? 'Mesocycle complete! 🎉' : 'Workout saved');
     switchTab('train');
+    celebrate(
+      doneAll ? 'Mesocycle complete!' : 'Workout complete!',
+      doneAll ? 'Outstanding block — enjoy the recovery.' : 'Logged & progressed. Nice work.'
+    );
   };
 }
 
@@ -1257,6 +1263,63 @@ function runCountUps(root) {
     const fmt = f === 'k' ? fmtK : f === 'dec' ? (v => round1(v)) : (v => Math.round(v));
     countUp(n, to, fmt);
   });
+}
+
+/* ============================ haptics / rest / celebrate ============================ */
+/* Vibration API — works on Android/Chrome; iOS Safari has no support, so this
+   is a silent no-op there (progressive enhancement). */
+function haptic(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (_) {} }
+
+const Rest = {
+  el: null, iv: null, t0: 0, target: 120,
+  ensure() {
+    if (this.el) return;
+    const d = document.createElement('div');
+    d.className = 'rest-pill';
+    d.innerHTML = `<span class="rt-lbl">Rest</span><span class="rt-time num">0:00</span><button class="rt-skip" aria-label="Dismiss rest timer">✕</button><span class="rt-bar"><i></i></span>`;
+    document.body.appendChild(d);
+    d.querySelector('.rt-skip').onclick = () => { haptic(6); this.stop(); };
+    this.el = d;
+  },
+  start() {
+    this.ensure();
+    this.t0 = performance.now();
+    this.el.classList.add('show'); this.el.classList.remove('done');
+    clearInterval(this.iv); this.render(); this.iv = setInterval(() => this.render(), 250);
+  },
+  render() {
+    const s = Math.floor((performance.now() - this.t0) / 1000);
+    this.el.querySelector('.rt-time').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    this.el.querySelector('.rt-bar i').style.width = Math.min(100, s / this.target * 100) + '%';
+    if (s >= this.target && !this.el.classList.contains('done')) { this.el.classList.add('done'); haptic(18); }
+  },
+  stop() { clearInterval(this.iv); this.iv = null; if (this.el) this.el.classList.remove('show'); },
+};
+
+const CONFETTI_COLORS = ['#2f6fe0', '#1a9d4d', '#e0a52a', '#4c8df0', '#7fb0f7', '#d64545'];
+function celebrate(title, sub) {
+  const o = document.createElement('div');
+  o.className = 'celebrate';
+  let conf = '';
+  if (!REDUCE_MOTION()) {
+    for (let i = 0; i < 30; i++) {
+      const left = Math.round(Math.random() * 100);
+      const dur = (1.1 + Math.random() * 0.9).toFixed(2);
+      const delay = (Math.random() * 0.35).toFixed(2);
+      const col = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+      const rot = Math.round(Math.random() * 360);
+      conf += `<i style="left:${left}%;background:${col};animation-duration:${dur}s;animation-delay:${delay}s;transform:rotate(${rot}deg)"></i>`;
+    }
+  }
+  o.innerHTML = `<div class="confetti">${conf}</div><div class="cel-card">
+      <div class="cel-check"><svg viewBox="0 0 24 24"><path pathLength="1" d="M4 12.5l5 5 11-11"/></svg></div>
+      <div class="cel-title">${esc(title)}</div>
+      ${sub ? `<div class="cel-sub muted">${esc(sub)}</div>` : ''}
+    </div>`;
+  document.body.appendChild(o);
+  haptic([12, 40, 14]);
+  requestAnimationFrame(() => o.classList.add('show'));
+  setTimeout(() => { o.classList.remove('show'); setTimeout(() => o.remove(), 320); }, 1600);
 }
 
 /* ============================ settings / export ============================ */
