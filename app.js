@@ -1,5 +1,5 @@
 /* =====================================================================
-   MesoForge — hypertrophy training PWA  (redesigned UI, same engine)
+   MesoForge — iOS-native rebuild (same engine, new everything else)
    Autoregulated volume, RIR progression, deloads, progress analytics.
    All data stays on-device (IndexedDB). Export/import JSON backup.
    ===================================================================== */
@@ -9,7 +9,6 @@
 const MUSCLES = ['Chest','Back','Shoulders','Biceps','Triceps','Quads','Hamstrings','Glutes','Calves','Abs'];
 
 const SEED_EXERCISES = [
-  // Chest
   { name:'Barbell Bench Press', muscle:'Chest', eq:'Barbell' },
   { name:'Incline Barbell Press', muscle:'Chest', eq:'Barbell' },
   { name:'Dumbbell Bench Press', muscle:'Chest', eq:'Dumbbell' },
@@ -19,7 +18,6 @@ const SEED_EXERCISES = [
   { name:'Pec Deck', muscle:'Chest', eq:'Machine' },
   { name:'Weighted Dip', muscle:'Chest', eq:'Bodyweight' },
   { name:'Push-Up', muscle:'Chest', eq:'Bodyweight' },
-  // Back
   { name:'Deadlift', muscle:'Back', eq:'Barbell' },
   { name:'Barbell Row', muscle:'Back', eq:'Barbell' },
   { name:'Pull-Up', muscle:'Back', eq:'Bodyweight' },
@@ -29,7 +27,6 @@ const SEED_EXERCISES = [
   { name:'Chest-Supported Row', muscle:'Back', eq:'Machine' },
   { name:'Single-Arm Dumbbell Row', muscle:'Back', eq:'Dumbbell' },
   { name:'Rack Pull', muscle:'Back', eq:'Barbell' },
-  // Shoulders
   { name:'Overhead Press', muscle:'Shoulders', eq:'Barbell' },
   { name:'Seated Dumbbell Press', muscle:'Shoulders', eq:'Dumbbell' },
   { name:'Machine Shoulder Press', muscle:'Shoulders', eq:'Machine' },
@@ -38,21 +35,18 @@ const SEED_EXERCISES = [
   { name:'Reverse Pec Deck', muscle:'Shoulders', eq:'Machine' },
   { name:'Face Pull', muscle:'Shoulders', eq:'Cable' },
   { name:'Upright Row', muscle:'Shoulders', eq:'Barbell' },
-  // Biceps
   { name:'Barbell Curl', muscle:'Biceps', eq:'Barbell' },
   { name:'Dumbbell Curl', muscle:'Biceps', eq:'Dumbbell' },
   { name:'Incline Dumbbell Curl', muscle:'Biceps', eq:'Dumbbell' },
   { name:'Hammer Curl', muscle:'Biceps', eq:'Dumbbell' },
   { name:'Preacher Curl', muscle:'Biceps', eq:'Machine' },
   { name:'Cable Curl', muscle:'Biceps', eq:'Cable' },
-  // Triceps
   { name:'Close-Grip Bench Press', muscle:'Triceps', eq:'Barbell' },
   { name:'Skull Crusher', muscle:'Triceps', eq:'Barbell' },
   { name:'Cable Pushdown', muscle:'Triceps', eq:'Cable' },
   { name:'Overhead Cable Extension', muscle:'Triceps', eq:'Cable' },
   { name:'Dumbbell Overhead Extension', muscle:'Triceps', eq:'Dumbbell' },
   { name:'Assisted Dip (Triceps)', muscle:'Triceps', eq:'Machine' },
-  // Quads
   { name:'Back Squat', muscle:'Quads', eq:'Barbell' },
   { name:'Front Squat', muscle:'Quads', eq:'Barbell' },
   { name:'Hack Squat', muscle:'Quads', eq:'Machine' },
@@ -60,24 +54,20 @@ const SEED_EXERCISES = [
   { name:'Bulgarian Split Squat', muscle:'Quads', eq:'Dumbbell' },
   { name:'Leg Extension', muscle:'Quads', eq:'Machine' },
   { name:'Walking Lunge', muscle:'Quads', eq:'Dumbbell' },
-  // Hamstrings
   { name:'Romanian Deadlift', muscle:'Hamstrings', eq:'Barbell' },
   { name:'Stiff-Leg Deadlift', muscle:'Hamstrings', eq:'Barbell' },
   { name:'Lying Leg Curl', muscle:'Hamstrings', eq:'Machine' },
   { name:'Seated Leg Curl', muscle:'Hamstrings', eq:'Machine' },
   { name:'Nordic Curl', muscle:'Hamstrings', eq:'Bodyweight' },
   { name:'Good Morning', muscle:'Hamstrings', eq:'Barbell' },
-  // Glutes
   { name:'Barbell Hip Thrust', muscle:'Glutes', eq:'Barbell' },
   { name:'Glute Bridge', muscle:'Glutes', eq:'Barbell' },
   { name:'Cable Kickback', muscle:'Glutes', eq:'Cable' },
   { name:'Sumo Deadlift', muscle:'Glutes', eq:'Barbell' },
   { name:'Machine Hip Abduction', muscle:'Glutes', eq:'Machine' },
-  // Calves
   { name:'Standing Calf Raise', muscle:'Calves', eq:'Machine' },
   { name:'Seated Calf Raise', muscle:'Calves', eq:'Machine' },
   { name:'Leg Press Calf Raise', muscle:'Calves', eq:'Machine' },
-  // Abs
   { name:'Cable Crunch', muscle:'Abs', eq:'Cable' },
   { name:'Hanging Leg Raise', muscle:'Abs', eq:'Bodyweight' },
   { name:'Ab Wheel Rollout', muscle:'Abs', eq:'Bodyweight' },
@@ -85,7 +75,6 @@ const SEED_EXERCISES = [
   { name:'Plank', muscle:'Abs', eq:'Bodyweight' },
 ];
 
-/* Templates: each day = named list of muscle slots (muscle appears once per set-group) */
 const TEMPLATES = [
   {
     id:'fb3', name:'Full Body', days:3, blurb:'3 days/week — every muscle hit often, minimal time.',
@@ -127,12 +116,9 @@ const TEMPLATES = [
   },
 ];
 
-const MAX_SETS_PER_EX = 6;     // per-exercise cap
+const MAX_SETS_PER_EX = 6;
 const DELOAD_RIR = 4;
 
-/* Per-muscle weekly volume landmarks (sets/week) — approximations of the
-   MEV/MRV ranges commonly discussed in public hypertrophy-volume literature.
-   Week 1 starts near MEV; autoregulation never pushes a muscle past MRV. */
 const VOLUME_LANDMARKS = {
   Chest:      { mev: 8,  mrv: 20 },
   Back:       { mev: 10, mrv: 22 },
@@ -146,34 +132,13 @@ const VOLUME_LANDMARKS = {
   Abs:        { mev: 6,  mrv: 20 },
 };
 
-/* RIR ramp presets selectable per meso */
 const RIR_RAMPS = [
   { id: '3-0', label: '3 → 0 RIR (standard)', start: 3, end: 0 },
   { id: '2-0', label: '2 → 0 RIR (aggressive)', start: 2, end: 0 },
   { id: '3-1', label: '3 → 1 RIR (conservative)', start: 3, end: 1 },
 ];
 
-/* ============================ inline icons ============================ */
-const I = {
-  play:  '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.87l11-6.5a1 1 0 0 0 0-1.74l-11-6.5A1 1 0 0 0 8 5.5z"/></svg>',
-  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5 11-11"/></svg>',
-  swap:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>',
-  plus:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
-  dumbbell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg>',
-  lock:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
-  chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
-  trend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>',
-  flame: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s5 4.5 5 9a5 5 0 0 1-10 0c0-1 .4-2 1-2.8C8 10 9 12 10 12c1.5 0 1-2.5.5-4C10 6 12 3.5 12 2z"/></svg>',
-  medal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="6"/><path d="M9 8.5L7 2h10l-2 6.5M12 12v4M10 14h4" opacity=".9"/></svg>',
-  cal:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/></svg>',
-};
-const icon = (name, cls='') => `<span class="${cls}" aria-hidden="true">${I[name] || ''}</span>`;
-const EQ_ABBR = { Barbell:'BB', Dumbbell:'DB', Machine:'MA', Cable:'CB', Bodyweight:'BW', Other:'—' };
-const MUSCLE_ICON = (m) => `icons/m/${String(m).toLowerCase()}.png`;
-const mIcon = (m, cls='m-ic') => `<img class="${cls}" src="${MUSCLE_ICON(m)}" alt="" loading="lazy">`;
-const MSHORT = { Chest:'Chest', Back:'Back', Shoulders:'Delts', Biceps:'Biceps', Triceps:'Triceps', Quads:'Quads', Hamstrings:'Hams', Glutes:'Glutes', Calves:'Calves', Abs:'Abs' };
-
-/* training-group identity: fixed categorical mapping (push/pull/legs/core) */
+/* training-group identity (maps onto iOS system tints in CSS) */
 const MGROUP = {
   Chest:'push', Shoulders:'push', Triceps:'push',
   Back:'pull', Biceps:'pull',
@@ -184,6 +149,25 @@ const GROUP_LABEL = { push:'Push', pull:'Pull', legs:'Legs', core:'Core' };
 const gOf = (m) => MGROUP[m] || 'push';
 const gCls = (m) => 'g-' + gOf(m);
 const dayGroups = (day) => [...new Set(day.slots.map(s => gOf(s.muscle)))];
+
+/* ============================ SF-style glyphs ============================ */
+const I = {
+  dumbbell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg>',
+  check:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l4.8 4.8L19.5 7"/></svg>',
+  chev:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
+  chevL:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  swap:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>',
+  plus:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  play:     '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.7v12.6a1 1 0 0 0 1.52.86l10.3-6.3a1 1 0 0 0 0-1.72L9.52 4.84A1 1 0 0 0 8 5.7z"/></svg>',
+  chart:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16"/><path d="M6.5 16.5V10M11 16.5V5M15.5 16.5v-5M20 16.5V8" transform="translate(-1.5 0)"/></svg>',
+  flame:    '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s5 4.5 5 9a5 5 0 0 1-10 0c0-1 .4-2 1-2.8C8 10 9 12 10 12c1.5 0 1-2.5.5-4C10 6 12 3.5 12 2z"/></svg>',
+  book:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15.5H6.5A2.5 2.5 0 0 0 4 21z"/></svg>',
+  cal:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M8 2.5v3.5M16 2.5v3.5M3.5 9.5h17"/></svg>',
+  lock:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="11" width="13" height="9" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg>',
+};
+const icon = (name, cls='') => `<span class="${cls}" aria-hidden="true" style="display:inline-flex">${I[name] || ''}</span>`;
+const tile = (m, extra='') => `<span class="tile ${gCls(m)} ${extra}">${I.dumbbell}</span>`;
+const chev = `<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>`;
 
 /* ============================ tiny utils ============================ */
 const $ = (sel, el=document) => el.querySelector(sel);
@@ -228,15 +212,14 @@ const idb = {
   del: (store, key) => new Promise((res, rej) => { const r = tx(store, 'readwrite').delete(key); r.onsuccess = () => res(); r.onerror = () => rej(r.error); }),
 };
 
-/* in-memory state, hydrated from IndexedDB */
 const S = {
-  exercises: [],       // {id,name,muscle,eq,custom}
-  mesos: [],           // mesocycles
-  workouts: [],        // sessions
+  exercises: [],
+  mesos: [],
+  workouts: [],
   settings: { units:'lb', theme:'auto' },
   tab: 'train',
   activeWorkoutId: null,
-  planWeek: null,      // week being viewed on Train tab (null = current)
+  planWeek: null,
   progressMuscle: 'Chest',
   progressExercise: null,
 };
@@ -264,21 +247,19 @@ const exById = (id) => S.exercises.find(e => e.id === id);
 const activeMeso = () => S.mesos.find(m => m.status === 'active') || null;
 const mesoWorkouts = (mesoId) => S.workouts.filter(w => w.mesoId === mesoId);
 
-function accumWeeks(meso) { return meso.weeks - 1; } // last week is deload
+function accumWeeks(meso) { return meso.weeks - 1; }
 
 function targetRIR(meso, week) {
   const acc = accumWeeks(meso);
   const start = meso.rirStart ?? 3, end = meso.rirEnd ?? 0;
-  if (week >= meso.weeks) return DELOAD_RIR;      // deload
+  if (week >= meso.weeks) return DELOAD_RIR;
   if (acc <= 1) return end;
-  // linear ramp start → end across accumulation weeks
   const r = Math.round(start - ((start - end) * (week - 1)) / (acc - 1));
   return Math.max(end, Math.min(start, r));
 }
 
 function isDeload(meso, week) { return week === meso.weeks; }
 
-/* current week = first week that has an incomplete workout */
 function currentWeek(meso) {
   for (let w = 1; w <= meso.weeks; w++) {
     const done = mesoWorkouts(meso.id).filter(x => x.week === w && x.status === 'done').length;
@@ -291,37 +272,27 @@ function getWorkout(meso, week, dayIndex) {
   return mesoWorkouts(meso.id).find(w => w.week === week && w.dayIndex === dayIndex) || null;
 }
 
-/* ============================ progression engine ============================
-   Original autoregulation, inspired by common hypertrophy programming ideas:
-   - Sets start low (MEV-ish) and climb week to week based on recovery feedback.
-   - Per-muscle post-session feedback: soreness (recovery), pump, workload.
-   - Still sore or overwhelming workload -> pull a set. Low pump + easy
-     workload -> add sets. Otherwise nudge upward slowly.
-   - Final week is a deload: half sets, ~60% load, RIR 4+.
-*/
+/* ============================ progression engine ============================ */
 function setDeltaFromFeedback(fb) {
-  if (!fb) return 1; // no feedback given: default gentle +1 progression
-  const { soreness, pump, workload, joints = 0 } = fb; // soreness 0-2, pump 0-2, workload 0-3, joints 0-2
-  if (joints === 2) return -1;                           // painful joints: back off regardless
-  if (soreness === 2 || workload === 3) return -1;      // under-recovered / overreached
-  const ease = workload <= 1 ? 1 : 0;                    // easy or manageable
-  const stimulus = (2 - pump) + ease;                    // low pump => more room
-  if (joints === 1) return 0;                            // achy joints: hold, never add
+  if (!fb) return 1;
+  const { soreness, pump, workload, joints = 0 } = fb;
+  if (joints === 2) return -1;
+  if (soreness === 2 || workload === 3) return -1;
+  const ease = workload <= 1 ? 1 : 0;
+  const stimulus = (2 - pump) + ease;
+  if (joints === 1) return 0;
   if (stimulus >= 3) return 2;
   if (stimulus >= 2) return 1;
-  if (soreness === 1 && workload === 2) return 0;        // just recovered + hard: hold
+  if (soreness === 1 && workload === 2) return 0;
   return 1;
 }
 
-/* Sets-per-slot for week 1: spread each muscle's MEV-ish weekly start
-   across however many times it appears in the week. */
 function weekOneSetsForMuscle(meso, muscle) {
   const slotCount = meso.days.reduce((a, d) => a + d.slots.filter(s => s.muscle === muscle).length, 0) || 1;
   const lm = VOLUME_LANDMARKS[muscle] || { mev: 6 };
   return Math.max(2, Math.min(4, Math.round(lm.mev / slotCount)));
 }
 
-/* Build week-1 workouts for a fresh meso */
 function buildWeekOne(meso) {
   meso.days.forEach((day, di) => {
     const w = {
@@ -329,17 +300,15 @@ function buildWeekOne(meso) {
       entries: day.slots.map(s => ({
         exerciseId: s.exerciseId, muscle: s.muscle,
         targetSets: weekOneSetsForMuscle(meso, s.muscle), targetRIR: targetRIR(meso, 1),
-        sets: [], // {weight, reps, done}
+        sets: [],
       })),
-      feedback: {}, // muscle -> {soreness, pump, workload, joints}
+      feedback: {},
     };
     S.workouts.push(w);
     saveWorkout(w);
   });
 }
 
-/* Projected weekly sets for a muscle in a given week (logged sets for done
-   sessions, current targets otherwise) — used to enforce the MRV ceiling. */
 function weeklyMuscleTotal(meso, week, muscle) {
   let n = 0;
   for (const w of mesoWorkouts(meso.id).filter(x => x.week === week)) {
@@ -351,12 +320,10 @@ function weeklyMuscleTotal(meso, week, muscle) {
   return n;
 }
 
-/* When a workout completes, materialize the same day for next week with
-   feedback-adjusted set targets and prefilled targets from this week. */
 function scheduleNextWeek(meso, finished) {
   const nextWeek = finished.week + 1;
   if (nextWeek > meso.weeks) return;
-  if (getWorkout(meso, nextWeek, finished.dayIndex)) return; // already built
+  if (getWorkout(meso, nextWeek, finished.dayIndex)) return;
   const deload = isDeload(meso, nextWeek);
   const rir = targetRIR(meso, nextWeek);
 
@@ -364,8 +331,6 @@ function scheduleNextWeek(meso, finished) {
     let delta = deload ? 0 : setDeltaFromFeedback(finished.feedback[en.muscle]);
     const doneSets = en.sets.filter(s => s.done && s.reps > 0);
     const base = Math.max(doneSets.length || en.targetSets, 1);
-    // MRV ceiling: don't add sets if this muscle's projected weekly volume
-    // is already at/over its landmark
     if (delta > 0) {
       const lm = VOLUME_LANDMARKS[en.muscle];
       if (lm) {
@@ -375,7 +340,6 @@ function scheduleNextWeek(meso, finished) {
     }
     let sets = deload ? Math.max(1, Math.ceil(base / 2))
                       : Math.min(MAX_SETS_PER_EX, Math.max(1, base + delta));
-    // last week's best load, used to prefill suggestions
     const topSet = doneSets.slice().sort((a,b) => (b.weight*(1+b.reps/30)) - (a.weight*(1+a.reps/30)))[0] || null;
     const suggest = topSet
       ? { weight: deload ? round1(topSet.weight * 0.6) : topSet.weight, reps: topSet.reps }
@@ -395,7 +359,6 @@ function scheduleNextWeek(meso, finished) {
   saveWorkout(w);
 }
 
-/* estimated 1RM (Epley), treating logged reps at face value */
 const e1rm = (weight, reps) => reps > 0 ? weight * (1 + reps / 30) : 0;
 
 /* ============================ analytics data ============================ */
@@ -409,7 +372,7 @@ function weeklySetsForMuscle(meso, muscle) {
         n += w.status === 'done' ? en.sets.filter(s => s.done && s.reps > 0).length : en.targetSets;
       }
     }
-    out.push({ label: isDeload(meso, wk) ? 'DL' : 'W' + wk, value: n, projected: false });
+    out.push({ label: isDeload(meso, wk) ? 'DL' : 'W' + wk, value: n });
   }
   return out;
 }
@@ -442,11 +405,24 @@ function e1rmTrend(exerciseId) {
   return pts;
 }
 
-/* ============================ router / shell ============================ */
+/* ============================ nav / router ============================ */
+const TAB_TITLE = { train: 'Training', plan: 'Plan', library: 'Library', progress: 'Progress' };
+
+function setNav(title, { back = null } = {}) {
+  $('#nav-title').textContent = title;
+  const left = $('#nav-left');
+  if (back) {
+    left.innerHTML = `<button class="nav-btn" id="btn-nav-back">${icon('chevL')}${esc(back.label)}</button>`;
+    $('#btn-nav-back').onclick = back.onTap;
+  } else {
+    left.innerHTML = '';
+  }
+}
+
 function switchTab(tab) {
   S.tab = tab;
   if (tab !== 'workout') Rest.stop();
-  $$('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  $$('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.tab === (tab === 'workout' ? 'train' : tab)));
   $$('.view').forEach(v => v.classList.remove('active'));
   $('#view-' + tab).classList.add('active');
   window.scrollTo(0, 0);
@@ -454,10 +430,6 @@ function switchTab(tab) {
 }
 
 function render() {
-  const meso = activeMeso();
-  $('#header-sub').textContent = meso
-    ? `${meso.name} · Week ${currentWeek(meso)}${isDeload(meso, currentWeek(meso)) ? ' (deload)' : ''} of ${meso.weeks}`
-    : 'No active mesocycle';
   if (S.tab === 'train') renderTrain();
   if (S.tab === 'workout') renderWorkout();
   if (S.tab === 'plan') renderPlan();
@@ -471,25 +443,37 @@ function applyTheme() {
   else document.documentElement.setAttribute('data-theme', t);
 }
 
-/* ============================ modal helper ============================ */
-function openModal(html) {
+/* large title + optional subtitle */
+const largeTitle = (t, sub) => `<h1 class="large-title">${esc(t)}</h1>${sub ? `<div class="subtitle-line">${sub}</div>` : ''}`;
+
+/* ============================ sheet helper ============================ */
+function openSheet(html) {
   $('#modal-body').innerHTML = '<div class="drag"></div>' + html;
   $('#modal-scrim').classList.add('open');
 }
-function closeModal() { $('#modal-scrim').classList.remove('open'); }
+function closeSheet() { $('#modal-scrim').classList.remove('open'); }
+const sheetHead = (title, doneLabel = 'Done') => `
+  <div class="sheet-head">
+    <span class="side"></span>
+    <h2>${esc(title)}</h2>
+    <span class="side right"><button class="btn-plain" data-sheet-done>${esc(doneLabel)}</button></span>
+  </div>`;
 
-/* ============================ TRAIN view ============================ */
+/* ============================ TRAIN ============================ */
 function renderTrain() {
   const el = $('#view-train');
   const meso = activeMeso();
+  setNav('Training');
+
   if (!meso) {
     el.innerHTML = `
-      <div class="empty-state card">
-        <div class="empty-art"><img src="icons/empty-hero.png" alt=""></div>
-        <h2>Let's build your first block.</h2>
-        <p>Pick a split, choose your exercises, and MesoForge runs your week-to-week volume and effort progression automatically.</p>
-        <button class="btn primary block" id="btn-new-meso-empty">Create a mesocycle</button>
-      </div>`;
+      ${largeTitle('Training')}
+      <div class="empty-wrap">
+        <div class="sym">${I.dumbbell}</div>
+        <h2>No Active Mesocycle</h2>
+        <p>Create a training block and MesoForge will run your week-to-week sets, effort and deloads automatically.</p>
+      </div>
+      <div class="group"><button class="btn-filled" id="btn-new-meso-empty">${icon('plus')} New Mesocycle</button></div>`;
     $('#btn-new-meso-empty').onclick = () => { switchTab('plan'); openWizard(); };
     return;
   }
@@ -498,99 +482,107 @@ function renderTrain() {
   const viewWeek = S.planWeek || cw;
   const rir = targetRIR(meso, viewWeek);
   const deload = isDeload(meso, viewWeek);
-
   const doneCount = mesoWorkouts(meso.id).filter(w => w.status === 'done').length;
   const totalCount = meso.weeks * meso.days.length;
-  const pct = Math.round(100 * doneCount / totalCount);
 
-  // next session to do, in the *current* week
+  // next pending session in current week
   let nextDay = null;
   for (let di = 0; di < meso.days.length; di++) {
     const w = getWorkout(meso, cw, di);
     if (w && w.status !== 'done') { nextDay = { w, di, name: meso.days[di].name }; break; }
   }
 
-  const weekPills = Array.from({ length: meso.weeks }, (_, i) => {
+  const weekSeg = Array.from({ length: meso.weeks }, (_, i) => {
     const wk = i + 1;
-    const dl = isDeload(meso, wk);
-    const cls = ['week-pill', dl ? 'deload' : '', wk === viewWeek ? 'active' : '', wk === cw && wk !== viewWeek ? 'current' : ''].join(' ');
-    return `<button class="${cls}" data-week="${wk}">${dl ? 'Deload' : 'Week ' + wk}</button>`;
+    return `<button class="${wk === viewWeek ? 'active' : ''}" data-week="${wk}">${isDeload(meso, wk) ? 'DL' : 'W' + wk}</button>`;
   }).join('');
 
   const nextPendingIdx = meso.days.findIndex((_, di) => { const w = getWorkout(meso, viewWeek, di); return w && w.status !== 'done'; });
-  const days = meso.days.map((day, di) => {
+  const dayRows = meso.days.map((day, di) => {
     const w = getWorkout(meso, viewWeek, di);
     const done = w && w.status === 'done';
     const ready = !!w;
     const isNext = ready && !done && viewWeek === cw && di === nextPendingIdx;
     const totalSets = w ? w.entries.reduce((a, e) => a + (done ? e.sets.filter(s => s.done).length : e.targetSets), 0) : 0;
-    const ic = done ? 'check' : ready ? 'dumbbell' : 'lock';
+    const g = dayGroups(day)[0] || 'push';
+    const detail = !ready ? '' : done ? (w.date || 'Done') : isNext ? 'Up Next' : 'Ready';
     return `
-      <div class="day-card ${done ? 'done' : ''} ${isNext ? 'today' : ''} ${!ready ? 'day-locked' : ''}">
-        <div class="day-icon">${icon(ic)}</div>
-        <div class="day-main">
-          <div class="day-title">${esc(day.name)}</div>
-          <div class="day-meta">${ready ? totalSets + ' sets · ' + (done ? 'completed' + (w.date ? ' · ' + w.date : '') : isNext ? 'up next' : 'ready') : 'unlocks after last week’s session'}</div>
-          <div class="day-dots">${dayGroups(day).map(g => `<span class="group-dot g-${g}" title="${GROUP_LABEL[g]}"></span>`).join('')}</div>
-        </div>
-        ${ready && !done ? `<button class="btn ${isNext ? 'primary' : 'ghost'} small" data-start="${w.id}">${w.entries.some(e => e.sets.length) ? 'Resume' : 'Start'}</button>` : ''}
-        ${done ? `<button class="btn subtle small" data-view-workout="${w.id}">View</button>` : ''}
+      <button class="row has-tile" data-day="${di}" ${!ready ? 'disabled style="opacity:.45"' : ''}>
+        <span class="tile g-${g}">${done ? I.check : ready ? I.dumbbell : I.lock}</span>
+        <span class="r-main">
+          <span class="r-title">${esc(day.name)}</span>
+          <span class="r-sub" style="display:block">${ready ? totalSets + ' sets · ' + dayGroups(day).map(x => GROUP_LABEL[x]).join(' + ') : 'Unlocks after last week’s session'}</span>
+        </span>
+        <span class="r-detail ${isNext ? 'tint' : ''}">${detail}</span>
+        ${ready ? chev : ''}
+      </button>`;
+  }).join('');
+
+  const planMuscles = MUSCLES.filter(m => meso.days.some(d => d.slots.some(s => s.muscle === m)));
+  const volLines = planMuscles.map(m => {
+    const lm = VOLUME_LANDMARKS[m] || { mev: 6, mrv: 18 };
+    const sets = weeklyMuscleTotal(meso, cw, m);
+    const scaleMax = Math.max(lm.mrv * 1.15, sets, 1);
+    const st = sets < lm.mev ? 'under' : sets > lm.mrv ? 'over' : 'optimal';
+    const zL = 100 * lm.mev / scaleMax, zR = 100 * lm.mrv / scaleMax;
+    return `
+      <div class="vol-line ${gCls(m)}">
+        ${tile(m)}
+        <span class="vm">${esc(m)}</span>
+        <span class="vtrack"><span class="vzone" style="left:${zL}%;width:${zR - zL}%"></span><span class="vfill ${st}" style="width:${Math.min(100, 100 * sets / scaleMax)}%"></span></span>
+        <span class="vv num">${sets}</span>
       </div>`;
   }).join('');
 
-  // this-week volume balance (muscle icons + status)
-  const planMuscles = MUSCLES.filter(m => meso.days.some(d => d.slots.some(s => s.muscle === m)));
-  let nUnder = 0, nOpt = 0, nOver = 0;
-  const balCells = planMuscles.map(m => {
-    const lm = VOLUME_LANDMARKS[m] || { mev: 6, mrv: 18 };
-    const sets = weeklyMuscleTotal(meso, cw, m);
-    const st = sets < lm.mev ? 'under' : sets > lm.mrv ? 'over' : 'optimal';
-    st === 'under' ? nUnder++ : st === 'over' ? nOver++ : nOpt++;
-    return `<button class="bal-cell ${gCls(m)}" data-goprog aria-label="${esc(m)} ${sets} sets"><span class="m-plate"><img class="m-ic" src="${MUSCLE_ICON(m)}" alt=""></span><span class="bal-n">${sets}</span><span class="bal-name">${esc(MSHORT[m] || m)}</span><span class="bal-dot ${st}"></span></button>`;
-  }).join('');
-
   el.innerHTML = `
-    <div class="today-hero">
-      <div class="hero-eyebrow">${esc(meso.name)}</div>
-      <div class="hero-title">${deload ? 'Deload' : 'Week ' + viewWeek}</div>
-      ${deload ? '<span class="hero-badge">Recovery week</span>' : ''}
-      <div class="hero-meta">${deload
-        ? `Half volume · light loads · leave ${rir}+ reps in the tank`
-        : `Target effort — ${rir === 0 ? '0 RIR, take sets to failure' : rir + ' reps in reserve'}`}</div>
-      <div class="progress-track" style="margin-top:14px"><div class="progress-fill" style="width:${pct}%"></div></div>
-      <div class="hero-meta" style="margin-top:7px">${doneCount} of ${totalCount} sessions complete · ${pct}%</div>
-      ${nextDay ? `<button class="btn primary block" id="btn-hero-start" style="margin-top:14px">${icon('play','ic')} ${nextDay.w.entries.some(e => e.sets.length) ? 'Resume' : 'Start'} ${esc(nextDay.name)}</button>` : ''}
-    </div>
+    ${largeTitle('Training', `${esc(meso.name)} · ${deload ? 'Deload' : 'Week ' + viewWeek} of ${meso.weeks} · ${rir === DELOAD_RIR ? rir + '+' : rir} RIR target`)}
 
-    <div class="train-sched">
-      <div class="section-title">Schedule</div>
-      <div class="week-strip">${weekPills}</div>
-      <div class="day-list" style="margin-top:12px">${days}</div>
-    </div>
-
-    <div class="train-vol">
-      <div class="section-title" style="margin-top:22px">This week’s volume</div>
-      <div class="card">
-        <div class="row wrap" style="margin-bottom:12px">${['push','pull','legs','core'].map(g => `<span class="group-chip g-${g}"><span class="group-dot"></span>${GROUP_LABEL[g]}</span>`).join('')}</div>
-        <div class="balance-grid">${balCells}</div>
-        <div class="balance-summary">
-          <span><b>${nOpt}</b> in range</span>
-          ${nUnder ? `<span style="color:var(--warn)"><b>${nUnder}</b> below target</span>` : ''}
-          ${nOver ? `<span style="color:var(--over)"><b>${nOver}</b> over</span>` : ''}
-          <span class="spacer"></span>
-          <span class="muted" style="font-size:12px">Tap → Progress</span>
+    ${nextDay ? `
+    <div class="group" style="margin-top:14px">
+      <div class="list">
+        <div class="row has-tile" style="padding-top:14px;padding-bottom:6px">
+          <span class="tile lg g-${dayGroups(meso.days[nextDay.di])[0]}">${I.dumbbell}</span>
+          <span class="r-main">
+            <span class="r-title" style="font-weight:600">${esc(nextDay.name)}</span>
+            <span class="r-sub" style="display:block">${nextDay.w.entries.reduce((a,e)=>a+e.targetSets,0)} sets · ${dayGroups(meso.days[nextDay.di]).map(x=>GROUP_LABEL[x]).join(' + ')}</span>
+          </span>
         </div>
+        <div style="padding: 6px 16px 8px">
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round(100*doneCount/totalCount)}%"></div></div>
+          <div style="font-size:13px;color:var(--label-2);margin-top:6px">${doneCount} of ${totalCount} sessions complete</div>
+        </div>
+        <button class="row action bold" id="btn-hero-start"><span class="r-title">${nextDay.w.entries.some(e => e.sets.length) ? 'Resume Session' : 'Start Session'}</span></button>
       </div>
+    </div>` : ''}
+
+    <div class="group">
+      <div class="group-header">Week</div>
+      <div class="seg" id="seg-week">${weekSeg}</div>
+    </div>
+
+    <div class="group">
+      <div class="group-header">Schedule</div>
+      <div class="list">${dayRows}</div>
+      ${deload ? '<div class="group-footer">Deload week — half volume, light loads, leave 4+ reps in reserve.</div>' : ''}
+    </div>
+
+    <div class="group">
+      <div class="group-header">This Week’s Volume</div>
+      <div class="list">${volLines}</div>
+      <div class="group-footer">Working sets vs. each muscle’s recoverable range. Shaded area = effective zone (MEV–MRV).</div>
     </div>`;
 
   if (nextDay) $('#btn-hero-start').onclick = () => { S.activeWorkoutId = nextDay.w.id; switchTab('workout'); };
-  $$('[data-goprog]', el).forEach(b => b.onclick = () => switchTab('progress'));
-  $$('.week-pill', el).forEach(b => b.onclick = () => { S.planWeek = +b.dataset.week; renderTrain(); });
-  $$('[data-start]', el).forEach(b => b.onclick = () => { S.activeWorkoutId = b.dataset.start; switchTab('workout'); });
-  $$('[data-view-workout]', el).forEach(b => b.onclick = () => { S.activeWorkoutId = b.dataset.viewWorkout; switchTab('workout'); });
+  $$('#seg-week button', el).forEach(b => b.onclick = () => { S.planWeek = +b.dataset.week; renderTrain(); });
+  $$('[data-day]', el).forEach(b => b.onclick = () => {
+    const w = getWorkout(meso, viewWeek, +b.dataset.day);
+    if (!w) return;
+    S.activeWorkoutId = w.id;
+    switchTab('workout');
+  });
 }
 
-/* ============================ WORKOUT view ============================ */
+/* ============================ WORKOUT ============================ */
 function renderWorkout() {
   const el = $('#view-workout');
   const w = S.workouts.find(x => x.id === S.activeWorkoutId);
@@ -601,60 +593,52 @@ function renderWorkout() {
   const deload = isDeload(meso, w.week);
   const u = S.settings.units;
 
-  // workout completion (done sets / total target sets)
+  setNav(day.name, { back: { label: 'Training', onTap: () => switchTab('train') } });
+
   let doneSets = 0, targetTotal = 0;
   w.entries.forEach(en => {
     targetTotal += Math.max(en.targetSets, en.sets.length);
     doneSets += en.sets.filter(s => s.done).length;
   });
-  const wkPct = targetTotal ? Math.round(100 * doneSets / targetTotal) : 0;
 
   const blocks = w.entries.map((en, ei) => {
     const ex = exById(en.exerciseId);
-    const enDone = en.sets.length && en.sets.every(s => s.done) && en.sets.length >= en.targetSets;
-    const setRows = Array.from({ length: Math.max(en.targetSets, en.sets.length) }, (_, si) => {
+    const rows = Array.from({ length: Math.max(en.targetSets, en.sets.length) }, (_, si) => {
       const s = en.sets[si] || {};
       const sug = en.suggest && (s.weight == null) ? ` placeholder="${en.suggest.weight}"` : '';
       const sugR = en.suggest && (s.reps == null) ? ` placeholder="${en.suggest.reps}"` : '';
       return `
-        <div class="set-grid">
-          <div class="set-num">${si + 1}</div>
-          <input type="number" inputmode="decimal" step="any" min="0" class="${s.weight != null ? 'filled' : ''}" data-w="${ei}:${si}" value="${s.weight ?? ''}"${sug} ${readonly ? 'disabled' : ''} aria-label="weight">
-          <input type="number" inputmode="numeric" min="0" class="${s.reps != null ? 'filled' : ''}" data-r="${ei}:${si}" value="${s.reps ?? ''}"${sugR} ${readonly ? 'disabled' : ''} aria-label="reps">
-          <div class="rir-cell">${en.targetRIR}${deload ? '+' : ''}</div>
-          <button class="set-done-btn ${s.done ? 'done' : ''}" data-d="${ei}:${si}" ${readonly ? 'disabled' : ''} aria-label="mark set done">${icon('check')}</button>
+        <div class="set-line">
+          <span class="sn num">${si + 1}</span>
+          <input type="number" inputmode="decimal" step="any" min="0" data-w="${ei}:${si}" value="${s.weight ?? ''}"${sug} ${readonly ? 'disabled' : ''} aria-label="weight">
+          <input type="number" inputmode="numeric" min="0" data-r="${ei}:${si}" value="${s.reps ?? ''}"${sugR} ${readonly ? 'disabled' : ''} aria-label="reps">
+          <span class="rir num">${en.targetRIR}${deload ? '+' : ''}</span>
+          <button class="check ${s.done ? 'on' : ''}" data-d="${ei}:${si}" ${readonly ? 'disabled' : ''} aria-label="mark set done">${I.check}</button>
         </div>`;
     }).join('');
 
     return `
-      <div class="card exercise-block ${enDone ? 'complete' : ''}">
-        <div class="ex-head">
-          <span class="m-badge ${gCls(en.muscle)}">${mIcon(en.muscle)}</span>
-          <span class="ex-name">${esc(ex ? ex.name : 'Unknown')}</span>
-          <span class="muscle-tag ${gCls(en.muscle)}">${esc(en.muscle)}</span>
-          ${readonly ? '' : `<button class="icon-btn" data-swap="${ei}" title="Swap exercise" aria-label="Swap exercise">${icon('swap')}</button>`}
+      <div class="group">
+        <div class="list">
+          <div class="ex-header ${gCls(en.muscle)}">
+            ${tile(en.muscle)}
+            <span class="r-title">${esc(ex ? ex.name : 'Unknown')}</span>
+            <span class="g-label">${esc(en.muscle)}</span>
+            ${readonly ? '' : `<button class="btn-gray" data-swap="${ei}" aria-label="Swap exercise">Swap</button>`}
+          </div>
+          <div class="sets-header"><div>Set</div><div>${u === 'kg' ? 'kg' : 'lb'}</div><div>Reps</div><div>RIR</div><div></div></div>
+          ${rows}
+          ${readonly ? '' : `<button class="row action" data-addset="${ei}"><span class="r-title">Add Set</span></button>`}
         </div>
-        <div class="target-line"><b>${en.targetSets} set${en.targetSets > 1 ? 's' : ''}</b> · ${en.targetRIR}${deload ? '+' : ''} RIR${en.suggest ? ` · last time <b>${en.suggest.weight}${u} × ${en.suggest.reps}</b>` : ''}</div>
-        <div class="set-grid header"><div>Set</div><div>${u === 'kg' ? 'Kg' : 'Lb'}</div><div>Reps</div><div>RIR</div><div></div></div>
-        ${setRows}
-        ${readonly ? '' : `<button class="btn subtle small addset" data-addset="${ei}">${icon('plus','ic')} Add set</button>`}
+        ${en.suggest ? `<div class="group-footer">Last time: ${en.suggest.weight} ${u} × ${en.suggest.reps}</div>` : ''}
       </div>`;
   }).join('');
 
   el.innerHTML = `
-    <div class="wk-topbar">
-      <button class="btn subtle small" id="btn-back-train">${icon('chevL','ic')} Back</button>
-      <div class="t">
-        <strong>${esc(day.name)}</strong>
-        <div class="muted tiny">${isDeload(meso, w.week) ? 'Deload' : 'Week ' + w.week} · ${w.status === 'done' ? 'completed' : 'in progress'}</div>
-      </div>
-      <span style="width:72px"></span>
-    </div>
-    ${readonly ? '' : `<div class="wk-progress"><div class="progress-track"><div class="progress-fill" style="width:${wkPct}%"></div></div><span class="lbl num">${doneSets}/${targetTotal} sets</span></div>`}
+    ${largeTitle(day.name, `${deload ? 'Deload' : 'Week ' + w.week} · ${readonly ? 'Completed' + (w.date ? ' ' + w.date : '') : `<span class="num" id="wk-count">${doneSets}</span>/<span class="num">${targetTotal}</span> sets`}`)}
+    ${readonly ? '' : `<div style="padding:2px 16px 14px"><div class="bar-track"><div class="bar-fill" id="wk-bar" style="width:${targetTotal ? Math.round(100*doneSets/targetTotal) : 0}%"></div></div></div>`}
     ${blocks}
-    ${readonly ? '' : `<button class="btn primary block" id="btn-finish" style="margin-top:6px">${icon('check','ic')} Finish workout</button>`}`;
-
-  $('#btn-back-train').onclick = () => switchTab('train');
+    ${readonly ? '' : `<div class="group"><button class="btn-filled" id="btn-finish">${icon('check')} Finish Workout</button></div>`}`;
 
   if (readonly) return;
 
@@ -664,21 +648,18 @@ function renderWorkout() {
       const en = w.entries[ei];
       while (en.sets.length <= si) en.sets.push({ weight: null, reps: null, done: false });
       en.sets[si][key] = inp.value === '' ? null : +inp.value;
-      inp.classList.toggle('filled', inp.value !== '');
       saveWorkout(w);
     });
   };
   $$('[data-w]', el).forEach(saveField('w', 'weight'));
   $$('[data-r]', el).forEach(saveField('r', 'reps'));
 
-  const updateWkProgress = () => {
+  const updateProgress = () => {
     let d = 0, t = 0;
     w.entries.forEach(en => { t += Math.max(en.targetSets, en.sets.length); d += en.sets.filter(x => x.done).length; });
-    const pct = t ? Math.round(100 * d / t) : 0;
-    const fill = $('.wk-progress .progress-fill', el); if (fill) fill.style.width = pct + '%';
-    const lbl = $('.wk-progress .lbl', el); if (lbl) lbl.textContent = `${d}/${t} sets`;
+    const bar = $('#wk-bar'); if (bar) bar.style.width = (t ? Math.round(100 * d / t) : 0) + '%';
+    const c = $('#wk-count'); if (c) c.textContent = d;
   };
-  const flash = (node, cls) => { if (!node) return; node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); };
 
   $$('[data-d]', el).forEach(btn => btn.onclick = () => {
     const [ei, si] = btn.dataset.d.split(':').map(Number);
@@ -686,28 +667,21 @@ function renderWorkout() {
     while (en.sets.length <= si) en.sets.push({ weight: null, reps: null, done: false });
     const s = en.sets[si];
     const nowDone = !s.done;
-    // adopt suggestion if fields left empty
     if (nowDone && s.weight == null && en.suggest) s.weight = en.suggest.weight;
     if (nowDone && s.reps == null && en.suggest) s.reps = en.suggest.reps;
     s.done = nowDone;
     saveWorkout(w);
 
-    // in-place UI update (snappy, no full re-render) + tactile feedback
     const wInp = $(`[data-w="${ei}:${si}"]`, el), rInp = $(`[data-r="${ei}:${si}"]`, el);
-    if (wInp && s.weight != null) { wInp.value = s.weight; wInp.classList.add('filled'); }
-    if (rInp && s.reps != null) { rInp.value = s.reps; rInp.classList.add('filled'); }
-    btn.classList.toggle('done', nowDone);
-    const block = btn.closest('.exercise-block');
-    const wasComplete = block && block.classList.contains('complete');
-    const enDone = en.sets.length && en.sets.every(x => x.done) && en.sets.length >= en.targetSets;
-    if (block) block.classList.toggle('complete', enDone);
+    if (wInp && s.weight != null) wInp.value = s.weight;
+    if (rInp && s.reps != null) rInp.value = s.reps;
+    btn.classList.toggle('on', nowDone);
     if (nowDone) {
-      flash(btn, 'pop');
-      flash(btn.closest('.set-grid'), 'flash');
-      if (enDone && !wasComplete) { flash(block, 'jc'); haptic([8, 30, 8]); } else { haptic(9); }
+      btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop');
+      haptic(9);
       Rest.start();
     }
-    updateWkProgress();
+    updateProgress();
   });
 
   $$('[data-addset]', el).forEach(btn => btn.onclick = () => {
@@ -717,68 +691,75 @@ function renderWorkout() {
     renderWorkout();
   });
 
-  $$('[data-swap]', el).forEach(btn => btn.onclick = () => openSwapModal(w, +btn.dataset.swap));
+  $$('[data-swap]', el).forEach(btn => btn.onclick = () => openSwapSheet(w, +btn.dataset.swap));
 
-  $('#btn-finish').onclick = () => openFeedbackModal(meso, w);
+  $('#btn-finish').onclick = () => openFeedbackSheet(meso, w);
 }
 
-function openSwapModal(w, ei) {
+function openSwapSheet(w, ei) {
   const en = w.entries[ei];
   const options = S.exercises.filter(e => e.muscle === en.muscle)
-    .map(e => `<div class="lib-item" style="cursor:pointer" data-pick="${e.id}"><div class="eq-icon">${EQ_ABBR[e.eq] || '—'}</div><div style="flex:1"><div class="name">${esc(e.name)}</div><div class="eq">${esc(e.eq)}</div></div>${e.id === en.exerciseId ? '<span class="badge active">current</span>' : ''}</div>`)
-    .join('');
-  openModal(`<h2>Swap exercise</h2><p class="muted small">${esc(en.muscle)} · applies to this session and all future weeks.</p><div class="card flush" style="margin-top:12px">${options}</div>`);
+    .map(e => `
+      <button class="row has-tile" data-pick="${e.id}">
+        ${tile(e.muscle)}
+        <span class="r-main"><span class="r-title">${esc(e.name)}</span><span class="r-sub" style="display:block">${esc(e.eq)}</span></span>
+        ${e.id === en.exerciseId ? `<span style="color:var(--blue);display:inline-flex;width:22px">${I.check}</span>` : ''}
+      </button>`).join('');
+  openSheet(`
+    ${sheetHead('Swap Exercise', 'Cancel')}
+    <div class="group">
+      <div class="list">${options}</div>
+      <div class="group-footer">Applies to this session and all future weeks.</div>
+    </div>`);
+  $('[data-sheet-done]').onclick = closeSheet;
   $$('[data-pick]').forEach(d => d.onclick = () => {
     const newId = d.dataset.pick;
     en.exerciseId = newId; en.suggest = null;
     saveWorkout(w);
-    // also swap in the meso plan + future pending weeks
     const meso = S.mesos.find(m => m.id === w.mesoId);
     const slot = meso.days[w.dayIndex].slots[ei];
     if (slot) { slot.exerciseId = newId; saveMeso(meso); }
     S.workouts.filter(x => x.mesoId === w.mesoId && x.dayIndex === w.dayIndex && x.week > w.week && x.status === 'pending')
       .forEach(x => { if (x.entries[ei]) { x.entries[ei].exerciseId = newId; x.entries[ei].suggest = null; saveWorkout(x); } });
-    closeModal(); renderWorkout();
+    closeSheet(); renderWorkout();
   });
 }
 
 /* ============================ feedback + finish ============================ */
-function openFeedbackModal(meso, w) {
+function openFeedbackSheet(meso, w) {
   const muscles = [...new Set(w.entries.map(e => e.muscle))];
   const deload = isDeload(meso, w.week);
-  const fbSection = deload ? '<p class="muted">Deload week — no feedback needed. Enjoy the recovery. 🧘</p>' :
-    muscles.map(m => `
-      <div class="fb-group ${gCls(m)}">
-        <h3><span class="muscle-dot" style="background:var(--gc)"></span>${esc(m)}</h3>
-        <div class="fb-label">Soreness coming in</div>
-        <div class="seg grow" data-fb="${m}:soreness">
-          <button data-v="0">Healed early</button><button data-v="1">Just in time</button><button data-v="2">Still sore</button>
-        </div>
-        <div class="fb-label">Pump</div>
-        <div class="seg grow" data-fb="${m}:pump">
-          <button data-v="0">Low</button><button data-v="1">Decent</button><button data-v="2">Great</button>
-        </div>
-        <div class="fb-label">Workload</div>
-        <div class="seg grow" data-fb="${m}:workload">
-          <button data-v="0">Easy</button><button data-v="1">Manageable</button><button data-v="2">Pushed</button><button data-v="3">Too much</button>
-        </div>
-        <div class="fb-label">Joints &amp; connective tissue</div>
-        <div class="seg grow" data-fb="${m}:joints">
-          <button data-v="0">Fresh</button><button data-v="1">A bit achy</button><button data-v="2">Painful</button>
+  const seg4 = (m, k, opts) => `
+    <div style="padding:8px 16px 12px">
+      <div style="font-size:13px;color:var(--label-2);margin-bottom:6px">${opts.label}</div>
+      <div class="seg" data-fb="${m}:${k}">${opts.items.map((t, i) => `<button data-v="${i}">${t}</button>`).join('')}</div>
+    </div>`;
+
+  const fbSection = deload
+    ? '<div class="group"><div class="group-footer" style="padding-top:0">Deload week — no feedback needed. Enjoy the recovery.</div></div>'
+    : muscles.map(m => `
+      <div class="group">
+        <div class="group-header">${esc(m)}</div>
+        <div class="list ${gCls(m)}">
+          ${seg4(m, 'soreness', { label: 'Soreness coming in', items: ['Healed early','Just in time','Still sore'] })}
+          ${seg4(m, 'pump',     { label: 'Pump',               items: ['Low','Decent','Great'] })}
+          ${seg4(m, 'workload', { label: 'Workload',           items: ['Easy','Manageable','Pushed','Too much'] })}
+          ${seg4(m, 'joints',   { label: 'Joints',             items: ['Fresh','Achy','Painful'] })}
         </div>
       </div>`).join('');
 
-  openModal(`
-    <h2>Finish workout</h2>
-    <p class="muted small">${deload ? '' : 'Rate each muscle you trained — this drives next week’s set targets.'}</p>
+  openSheet(`
+    ${sheetHead('Finish Workout', 'Cancel')}
+    ${deload ? '' : '<div class="group"><div class="group-footer" style="padding-top:0">Rate each muscle — this sets next week’s targets.</div></div>'}
     ${fbSection}
-    <button class="btn primary block" id="btn-confirm-finish" style="margin-top:14px">Save &amp; finish</button>`);
+    <div class="group"><button class="btn-filled" id="btn-confirm-finish">Save &amp; Finish</button></div>`);
+
+  $('[data-sheet-done]').onclick = closeSheet;
 
   const fb = {};
   muscles.forEach(m => { if (!deload) fb[m] = { soreness: 1, pump: 1, workload: 1, joints: 0 }; });
   $$('.seg[data-fb]').forEach(seg => {
     const [m, k] = seg.dataset.fb.split(':');
-    // preselect defaults
     $$('button', seg).forEach(b => b.classList.toggle('active', +b.dataset.v === fb[m][k]));
     $$('button', seg).forEach(b => b.onclick = () => {
       fb[m][k] = +b.dataset.v;
@@ -790,51 +771,62 @@ function openFeedbackModal(meso, w) {
     w.feedback = fb;
     w.status = 'done';
     w.date = todayISO();
-    // drop empty trailing sets
     w.entries.forEach(en => { en.sets = en.sets.filter(s => s.done && (s.reps || 0) > 0); });
     saveWorkout(w);
     scheduleNextWeek(meso, w);
-    // meso complete?
     const doneAll = mesoWorkouts(meso.id).filter(x => x.status === 'done').length >= meso.weeks * meso.days.length;
     if (doneAll) { meso.status = 'done'; saveMeso(meso); }
     Rest.stop();
-    closeModal();
+    closeSheet();
     S.planWeek = null;
     switchTab('train');
     celebrate(
-      doneAll ? 'Mesocycle complete!' : 'Workout complete!',
-      doneAll ? 'Outstanding block — enjoy the recovery.' : 'Logged & progressed. Nice work.'
+      doneAll ? 'Mesocycle Complete' : 'Workout Complete',
+      doneAll ? 'Outstanding block. Enjoy the recovery.' : 'Logged and progressed.'
     );
   };
 }
 
-/* ============================ PLAN view + wizard ============================ */
+/* ============================ PLAN + wizard ============================ */
 function renderPlan() {
   const el = $('#view-plan');
+  setNav('Plan');
   const list = S.mesos.slice().sort((a, b) => (b.created || '').localeCompare(a.created || ''));
+
   el.innerHTML = `
-    <button class="btn primary block" id="btn-new-meso">${icon('plus','ic')} New mesocycle</button>
-    <div style="height:14px"></div>
-    ${list.length ? '<div class="section-title">Your blocks</div>' : '<div class="empty-state"><div class="empty-art"><img src="icons/empty-hero.png" alt=""></div><p>No mesocycles yet. Create one to get started.</p></div>'}
+    ${largeTitle('Plan')}
+    <div class="group" style="margin-top:14px">
+      <div class="list"><button class="row action bold" id="btn-new-meso"><span class="r-title">New Mesocycle…</span></button></div>
+    </div>
+    ${list.length ? '' : `
+      <div class="empty-wrap">
+        <div class="sym">${I.cal}</div>
+        <h2>No Mesocycles</h2>
+        <p>A mesocycle is a multi-week training block with a built-in deload. Create one to start.</p>
+      </div>`}
     ${list.map(m => {
       const done = mesoWorkouts(m.id).filter(w => w.status === 'done').length;
       const total = m.weeks * m.days.length;
-      const badge = m.status === 'active' ? '<span class="badge active">Active</span>'
-                  : m.status === 'done' ? '<span class="badge done">Finished</span>' : '';
+      const status = m.status === 'active' ? '<span class="r-detail tint">Active</span>'
+                   : m.status === 'done' ? '<span class="r-detail">Finished</span>'
+                   : `<button class="btn-gray" data-activate="${m.id}">Activate</button>`;
       return `
-      <div class="card meso-card">
-        <div class="row between">
-          <div style="min-width:0">
-            <div class="meso-title">${esc(m.name)}</div>
-            <div class="meso-meta">${m.days.length} days/wk · ${m.weeks - 1} wks + deload · ${done}/${total} sessions</div>
-          </div>
+      <div class="group">
+        <div class="group-header">${esc(m.name)}</div>
+        <div class="list">
           <div class="row">
-            ${badge || `<button class="btn small" data-activate="${m.id}">Activate</button>`}
-            <button class="icon-btn" data-del-meso="${m.id}" aria-label="Delete" style="color:var(--over)">✕</button>
+            <span class="r-main">
+              <span class="r-title">${m.days.length} days/week · ${m.weeks - 1} weeks + deload</span>
+              <span class="r-sub" style="display:block">${m.days.map(d => esc(d.name)).join(' · ')}</span>
+            </span>
+            ${status}
           </div>
+          <div style="padding:10px 16px 12px;position:relative">
+            <div class="bar-track"><div class="bar-fill" style="width:${Math.round(100*done/total)}%"></div></div>
+            <div style="font-size:13px;color:var(--label-2);margin-top:6px" class="num">${done} of ${total} sessions</div>
+          </div>
+          <button class="row action destructive" data-del-meso="${m.id}"><span class="r-title">Delete Mesocycle…</span></button>
         </div>
-        <div class="program-days">${m.days.map(d => `<span class="program-day">${esc(d.name)}<span class="dots">${dayGroups(d).map(g => `<span class="group-dot g-${g}" title="${GROUP_LABEL[g]}"></span>`).join('')}</span></span>`).join('')}</div>
-        <div class="progress-track" style="margin-top:12px"><div class="progress-fill" style="width:${Math.round(100*done/total)}%"></div></div>
       </div>`;
     }).join('')}`;
 
@@ -846,21 +838,24 @@ function renderPlan() {
   });
   $$('[data-del-meso]', el).forEach(b => b.onclick = () => {
     const m = S.mesos.find(x => x.id === b.dataset.delMeso);
-    openModal(`<h2>Delete “${esc(m.name)}”?</h2><p class="muted">This removes the plan and all its logged workouts. This cannot be undone.</p>
-      <div class="row" style="margin-top:14px"><button class="btn block" id="btn-cancel-del">Cancel</button><button class="btn danger block" id="btn-do-del" style="background:var(--over-weak)">Delete</button></div>`);
-    $('#btn-cancel-del').onclick = closeModal;
+    openSheet(`
+      ${sheetHead('Delete Mesocycle', 'Cancel')}
+      <div class="group">
+        <div class="group-footer" style="padding-top:0">“${esc(m.name)}” and all of its logged workouts will be permanently deleted. This cannot be undone.</div>
+      </div>
+      <div class="group"><div class="list"><button class="row action destructive bold" id="btn-do-del"><span class="r-title" style="font-weight:600">Delete Mesocycle</span></button></div></div>`);
+    $('[data-sheet-done]').onclick = closeSheet;
     $('#btn-do-del').onclick = async () => {
       const removed = mesoWorkouts(m.id);
       S.mesos = S.mesos.filter(x => x.id !== m.id);
       await idb.del('mesos', m.id);
       for (const wk of removed) await idb.del('workouts', wk.id);
       S.workouts = S.workouts.filter(wk => wk.mesoId !== m.id);
-      closeModal(); render(); toast('Deleted');
+      closeSheet(); render(); toast('Deleted');
     };
   });
 }
 
-/* --- meso creation wizard (3 steps) --- */
 const WIZ = { step: 0, template: null, weeks: 5, name: '', slots: [], ramp: '3-0' };
 
 function openWizard() {
@@ -874,19 +869,27 @@ function defaultExerciseFor(muscle, taken) {
 }
 
 function renderWizard() {
-  const dots = `<div class="wizard-step-dots">${[0,1,2].map(i => `<span class="${i <= WIZ.step ? 'on' : ''}"></span>`).join('')}</div>`;
+  const dots = `<div class="wiz-dots">${[0,1,2].map(i => `<span class="${i <= WIZ.step ? 'on' : ''}"></span>`).join('')}</div>`;
 
   if (WIZ.step === 0) {
-    openModal(`${dots}<h2>Pick a split</h2><p class="muted small">How many days a week can you train?</p>
-      <div style="margin-top:12px">
-      ${TEMPLATES.map(t => `
-        <div class="card pick-card" data-tpl="${t.id}">
-          <div class="row between"><strong>${esc(t.name)}</strong><span class="muscle-tag">${t.days} days</span></div>
-          <div class="muted small" style="margin-top:4px">${esc(t.blurb)}</div>
-        </div>`).join('')}</div>`);
+    openSheet(`
+      ${sheetHead('Choose a Split', 'Cancel')}${dots}
+      <div class="group">
+        <div class="list">
+          ${TEMPLATES.map(t => `
+            <button class="row" data-tpl="${t.id}">
+              <span class="r-main">
+                <span class="r-title">${esc(t.name)}</span>
+                <span class="r-sub" style="display:block">${esc(t.blurb)}</span>
+              </span>
+              <span class="r-detail">${t.days}d</span>
+              ${chev}
+            </button>`).join('')}
+        </div>
+      </div>`);
+    $('[data-sheet-done]').onclick = closeSheet;
     $$('[data-tpl]').forEach(c => c.onclick = () => {
       WIZ.template = TEMPLATES.find(t => t.id === c.dataset.tpl);
-      // build default slots
       WIZ.slots = WIZ.template.plan.map(day => {
         const taken = new Set();
         return day.slots.map(m => {
@@ -901,50 +904,66 @@ function renderWizard() {
   }
 
   if (WIZ.step === 1) {
-    openModal(`${dots}<h2>Length &amp; effort</h2>
-      <label class="field">Mesocycle name
-        <input type="text" id="wiz-name" placeholder="e.g. Summer block 1" value="${esc(WIZ.name)}">
-      </label>
-      <label class="field">Length
-        <div class="seg" id="wiz-weeks">
-          ${[4,5,6].map(n => `<button data-v="${n}" class="${WIZ.weeks === n ? 'active' : ''}">${n - 1} + deload</button>`).join('')}
+    openSheet(`
+      ${sheetHead('Block Details', 'Cancel')}${dots}
+      <div class="group">
+        <div class="list" style="padding:14px 16px">
+          <label class="field">Name
+            <input type="text" id="wiz-name" placeholder="e.g. Summer Block 1" value="${esc(WIZ.name)}">
+          </label>
+          <label class="field">Length
+            <div class="seg" id="wiz-weeks">
+              ${[4,5,6].map(n => `<button data-v="${n}" class="${WIZ.weeks === n ? 'active' : ''}">${n - 1} wk + DL</button>`).join('')}
+            </div>
+          </label>
+          <label class="field" style="margin-bottom:2px">Effort ramp
+            <select id="wiz-ramp">
+              ${RIR_RAMPS.map(r => `<option value="${r.id}" ${WIZ.ramp === r.id ? 'selected' : ''}>${r.label}</option>`).join('')}
+            </select>
+          </label>
         </div>
-      </label>
-      <label class="field">Effort ramp
-        <select id="wiz-ramp">
-          ${RIR_RAMPS.map(r => `<option value="${r.id}" ${WIZ.ramp === r.id ? 'selected' : ''}>${r.label}</option>`).join('')}
-        </select>
-      </label>
-      <p class="muted small">Effort ramps across the block, then a light deload week. Starting volume sits near each muscle’s minimum effective dose and autoregulates upward from your feedback, capped at its weekly maximum.</p>
-      <div class="row" style="margin-top:8px"><button class="btn block" id="wiz-back">Back</button><button class="btn primary block" id="wiz-next">Next</button></div>`);
+        <div class="group-footer">Effort ramps across the block, then a light deload week. Volume starts near each muscle’s minimum effective dose and autoregulates from your feedback.</div>
+      </div>
+      <div class="group" style="display:flex;gap:10px">
+        <button class="btn-gray" id="wiz-back" style="flex:1;min-height:50px;border-radius:12px">Back</button>
+        <button class="btn-filled" id="wiz-next" style="flex:2">Next</button>
+      </div>`);
+    $('[data-sheet-done]').onclick = closeSheet;
     $$('#wiz-weeks button').forEach(b => b.onclick = () => {
       WIZ.weeks = +b.dataset.v;
       $$('#wiz-weeks button').forEach(x => x.classList.toggle('active', x === b));
     });
     $('#wiz-back').onclick = () => { WIZ.step = 0; renderWizard(); };
     $('#wiz-next').onclick = () => {
-      WIZ.name = $('#wiz-name').value.trim() || WIZ.template.name + ' block';
+      WIZ.name = $('#wiz-name').value.trim() || WIZ.template.name + ' Block';
       WIZ.ramp = $('#wiz-ramp').value;
       WIZ.step = 2; renderWizard();
     };
     return;
   }
 
-  // step 2 — exercises per slot
   const daysHtml = WIZ.template.plan.map((day, di) => `
-    <h3>${esc(day.name)}</h3>
-    ${WIZ.slots[di].map((slot, si) => `
-      <div class="slot-row">
-        <span class="muscle-tag" style="min-width:76px;text-align:center">${esc(slot.muscle)}</span>
-        <select data-slot="${di}:${si}">
-          ${S.exercises.filter(e => e.muscle === slot.muscle).map(e => `<option value="${e.id}" ${e.id === slot.exerciseId ? 'selected' : ''}>${esc(e.name)}</option>`).join('')}
-        </select>
-      </div>`).join('')}`).join('');
+    <div class="group">
+      <div class="group-header">${esc(day.name)}</div>
+      <div class="list" style="padding:6px 16px 12px">
+        ${WIZ.slots[di].map((slot, si) => `
+          <label class="field" style="margin-bottom:10px">${esc(slot.muscle)}
+            <select data-slot="${di}:${si}">
+              ${S.exercises.filter(e => e.muscle === slot.muscle).map(e => `<option value="${e.id}" ${e.id === slot.exerciseId ? 'selected' : ''}>${esc(e.name)}</option>`).join('')}
+            </select>
+          </label>`).join('')}
+      </div>
+    </div>`).join('');
 
-  openModal(`${dots}<h2>Choose exercises</h2>
-    <p class="muted small">Defaults are picked for you — change any slot. You can also swap mid-meso later.</p>
+  openSheet(`
+    ${sheetHead('Choose Exercises', 'Cancel')}${dots}
+    <div class="group"><div class="group-footer" style="padding-top:0">Defaults are picked for you. You can also swap mid-block later.</div></div>
     ${daysHtml}
-    <div class="row" style="margin-top:16px"><button class="btn block" id="wiz-back">Back</button><button class="btn primary block" id="wiz-create">Create mesocycle</button></div>`);
+    <div class="group" style="display:flex;gap:10px">
+      <button class="btn-gray" id="wiz-back" style="flex:1;min-height:50px;border-radius:12px">Back</button>
+      <button class="btn-filled" id="wiz-create" style="flex:2">Create</button>
+    </div>`);
+  $('[data-sheet-done]').onclick = closeSheet;
   $$('[data-slot]').forEach(sel => sel.onchange = () => {
     const [di, si] = sel.dataset.slot.split(':').map(Number);
     WIZ.slots[di][si].exerciseId = sel.value;
@@ -962,15 +981,16 @@ function renderWizard() {
     saveMeso(meso);
     buildWeekOne(meso);
     S.planWeek = null;
-    closeModal();
+    closeSheet();
     toast('Mesocycle created');
     switchTab('train');
   };
 }
 
-/* ============================ LIBRARY view ============================ */
+/* ============================ LIBRARY ============================ */
 function renderLibrary() {
   const el = $('#view-library');
+  setNav('Library');
   const filter = S.libFilter || 'All';
   const chips = ['All', ...MUSCLES].map(m => `<button class="chip ${m === 'All' ? '' : gCls(m)} ${m === filter ? 'active' : ''}" data-m="${m}">${m}</button>`).join('');
   const list = S.exercises
@@ -978,31 +998,45 @@ function renderLibrary() {
     .sort((a, b) => a.muscle === b.muscle ? a.name.localeCompare(b.name) : MUSCLES.indexOf(a.muscle) - MUSCLES.indexOf(b.muscle));
 
   el.innerHTML = `
-    <div class="chips scroll" style="margin-bottom:12px">${chips}</div>
-    <button class="btn block" id="btn-add-ex">${icon('plus','ic')} Add custom exercise</button>
-    <div class="card flush" style="margin-top:12px">
-      ${list.map(e => `
-        <div class="lib-item">
-          <div class="eq-icon ${gCls(e.muscle)}">${mIcon(e.muscle)}</div>
-          <div style="flex:1"><div class="name">${esc(e.name)}</div><div class="eq">${esc(e.muscle)} · ${esc(e.eq)}${e.custom ? ' · custom' : ''}</div></div>
-          ${e.custom ? `<button class="btn small danger" data-del-ex="${e.id}">Remove</button>` : ''}
-        </div>`).join('') || '<div style="padding:20px"><p class="muted" style="text-align:center;margin:0">Nothing here.</p></div>'}
+    ${largeTitle('Library')}
+    <div class="chips" style="margin-top:8px">${chips}</div>
+    <div class="group">
+      <div class="list"><button class="row action" id="btn-add-ex"><span class="r-title">Add Exercise…</span></button></div>
+    </div>
+    <div class="group">
+      <div class="list">
+        ${list.map(e => `
+          <div class="row has-tile">
+            ${tile(e.muscle)}
+            <span class="r-main">
+              <span class="r-title">${esc(e.name)}</span>
+              <span class="r-sub" style="display:block">${esc(e.muscle)} · ${esc(e.eq)}${e.custom ? ' · Custom' : ''}</span>
+            </span>
+            ${e.custom ? `<button class="btn-gray" style="color:var(--red)" data-del-ex="${e.id}">Remove</button>` : ''}
+          </div>`).join('') || '<div class="row"><span class="r-main"><span class="r-title" style="color:var(--label-2)">Nothing here.</span></span></div>'}
+      </div>
     </div>`;
 
   $$('.chip', el).forEach(c => c.onclick = () => { S.libFilter = c.dataset.m; renderLibrary(); });
   $('#btn-add-ex').onclick = () => {
-    openModal(`<h2>Add exercise</h2>
-      <label class="field">Name<input type="text" id="ex-name" placeholder="e.g. Smith Machine Press"></label>
-      <label class="field">Muscle group<select id="ex-muscle">${MUSCLES.map(m => `<option>${m}</option>`).join('')}</select></label>
-      <label class="field">Equipment<select id="ex-eq">${['Barbell','Dumbbell','Machine','Cable','Bodyweight','Other'].map(q => `<option>${q}</option>`).join('')}</select></label>
-      <button class="btn primary block" id="ex-save">Save</button>`);
+    openSheet(`
+      ${sheetHead('New Exercise', 'Cancel')}
+      <div class="group">
+        <div class="list" style="padding:14px 16px">
+          <label class="field">Name<input type="text" id="ex-name" placeholder="e.g. Smith Machine Press"></label>
+          <label class="field">Muscle group<select id="ex-muscle">${MUSCLES.map(m => `<option>${m}</option>`).join('')}</select></label>
+          <label class="field" style="margin-bottom:2px">Equipment<select id="ex-eq">${['Barbell','Dumbbell','Machine','Cable','Bodyweight','Other'].map(q => `<option>${q}</option>`).join('')}</select></label>
+        </div>
+      </div>
+      <div class="group"><button class="btn-filled" id="ex-save">Add Exercise</button></div>`);
+    $('[data-sheet-done]').onclick = closeSheet;
     $('#ex-save').onclick = async () => {
       const name = $('#ex-name').value.trim();
       if (!name) { toast('Give it a name'); return; }
       const e = { id: uid(), name, muscle: $('#ex-muscle').value, eq: $('#ex-eq').value, custom: true };
       S.exercises.push(e);
       await idb.put('exercises', e);
-      closeModal(); renderLibrary(); toast('Added');
+      closeSheet(); renderLibrary(); toast('Added');
     };
   };
   $$('[data-del-ex]', el).forEach(b => b.onclick = async () => {
@@ -1013,18 +1047,23 @@ function renderLibrary() {
   });
 }
 
-/* ============================ PROGRESS view (charts) ============================ */
+/* ============================ PROGRESS ============================ */
 function renderProgress() {
   const el = $('#view-progress');
+  setNav('Progress');
   const meso = activeMeso() || S.mesos.slice().sort((a,b) => (b.created||'').localeCompare(a.created||''))[0];
   if (!meso) {
-    el.innerHTML = `<div class="empty-state card"><div class="empty-art"><img src="icons/empty-hero.png" alt=""></div><h2>No progress yet</h2><p>Charts and stats appear once you have a mesocycle underway.</p></div>`;
+    el.innerHTML = `${largeTitle('Progress')}
+      <div class="empty-wrap">
+        <div class="sym">${I.chart}</div>
+        <h2>No Data Yet</h2>
+        <p>Charts and statistics appear once you have a mesocycle underway.</p>
+      </div>`;
     return;
   }
   const loggedExIds = [...new Set(S.workouts.filter(w => w.status === 'done').flatMap(w => w.entries.map(e => e.exerciseId)))];
   if (!S.progressExercise || !loggedExIds.includes(S.progressExercise)) S.progressExercise = loggedExIds[0] || null;
 
-  // summary stats ----------------------------------------------------------
   const doneCount = mesoWorkouts(meso.id).filter(w => w.status === 'done').length;
   const totalCount = meso.weeks * meso.days.length;
   const adherence = Math.round(100 * doneCount / totalCount);
@@ -1032,7 +1071,6 @@ function renderProgress() {
   const totalTon = tonSeries.reduce((a, d) => a + d.value, 0);
   const cw = currentWeek(meso);
   const weekSets = MUSCLES.reduce((a, m) => a + weeklyMuscleTotal(meso, cw, m), 0);
-  // best e1RM across everything logged
   let bestE = 0, bestExId = null;
   for (const w of S.workouts.filter(w => w.status === 'done')) {
     for (const en of w.entries) for (const s of en.sets) if (s.done) {
@@ -1043,34 +1081,19 @@ function renderProgress() {
   const bestExName = bestExId ? (exById(bestExId)?.name || '') : '';
   const u = S.settings.units;
 
-  const statRow = `
-    <div class="stat-row" style="margin-bottom:14px">
-      <div class="stat-tile"><div class="v num"><span class="cv" data-count="${adherence}" data-fmt="int">0</span><small>%</small></div><div class="l">Adherence · ${doneCount}/${totalCount}</div></div>
-      <div class="stat-tile"><div class="v num"><span class="cv" data-count="${totalTon}" data-fmt="k">0</span><small> ${u}</small></div><div class="l">Total volume lifted</div>${tonSeries.some(d=>d.value)?`<div class="spark" id="spark-ton"></div>`:''}</div>
-      <div class="stat-tile"><div class="v num">${bestE ? `<span class="cv" data-count="${round1(bestE)}" data-fmt="dec">0</span><small> ${u}</small>` : '—'}</div><div class="l">${bestE ? 'Best e1RM · ' + esc(bestExName) : 'Best e1RM'}</div></div>
-      <div class="stat-tile"><div class="v num"><span class="cv" data-count="${weekSets}" data-fmt="int">0</span></div><div class="l">Working sets · wk ${cw}</div></div>
-    </div>`;
-
-  // muscle volume overview (current week vs MEV–MRV) ------------------------
   const planMuscles = MUSCLES.filter(m => meso.days.some(d => d.slots.some(s => s.muscle === m)));
-  const volRows = planMuscles.map(m => {
+  const volLines = planMuscles.map(m => {
     const lm = VOLUME_LANDMARKS[m] || { mev: 6, mrv: 18 };
     const sets = weeklyMuscleTotal(meso, cw, m);
     const scaleMax = Math.max(lm.mrv * 1.15, sets, 1);
-    const status = sets < lm.mev ? 'under' : sets > lm.mrv ? 'over' : 'optimal';
-    const statusTxt = status === 'under' ? 'below MEV' : status === 'over' ? 'over MRV' : 'optimal';
-    const pctFill = Math.min(100, 100 * sets / scaleMax);
+    const st = sets < lm.mev ? 'under' : sets > lm.mrv ? 'over' : 'optimal';
     const zL = 100 * lm.mev / scaleMax, zR = 100 * lm.mrv / scaleMax;
     return `
-      <div class="volume-row">
-        <div class="vol-muscle ${gCls(m)}"><span class="m-plate">${mIcon(m)}</span>${esc(m)}</div>
-        <div class="vol-track">
-          <div class="vol-zone" style="left:${zL}%;width:${zR - zL}%"></div>
-          <div class="vol-zone-line" style="left:${zL}%"></div>
-          <div class="vol-zone-line" style="left:${zR}%"></div>
-          <div class="vol-fill ${status}" style="width:${pctFill}%"></div>
-        </div>
-        <div class="vol-val num">${sets}<span class="st ${status}">${statusTxt}</span></div>
+      <div class="vol-line ${gCls(m)}">
+        ${tile(m)}
+        <span class="vm">${esc(m)}</span>
+        <span class="vtrack"><span class="vzone" style="left:${zL}%;width:${zR - zL}%"></span><span class="vfill ${st}" style="width:${Math.min(100, 100 * sets / scaleMax)}%"></span></span>
+        <span class="vv num">${sets}</span>
       </div>`;
   }).join('');
 
@@ -1080,36 +1103,43 @@ function renderProgress() {
   const exOptions = loggedExIds.map(id => { const e = exById(id); return e ? `<option value="${id}" ${id === S.progressExercise ? 'selected' : ''}>${esc(e.name)}</option>` : ''; }).join('');
 
   el.innerHTML = `
-    ${statRow}
+    ${largeTitle('Progress', esc(meso.name))}
 
-    <div class="card">
-      <h2>Weekly volume by muscle</h2>
-      <p class="muted small" style="margin:-4px 0 14px">Working sets this week (Week ${cw}) against each muscle’s recoverable range.</p>
-      <div class="volume-list">${volRows}</div>
-      <div class="legend">
-        <span><i style="background:var(--warn)"></i>Below MEV — add volume</span>
-        <span><i style="background:var(--accent)"></i>In range — optimal</span>
-        <span><i style="background:var(--over)"></i>Over MRV — ease off</span>
-        <span><i style="background:var(--good-weak);border:1px solid var(--good)"></i>MEV–MRV zone</span>
-      </div>
+    <div class="stat-grid" style="margin-top:12px">
+      <div class="stat-cell"><div class="l">Adherence</div><div class="v num">${adherence}<small>%</small></div></div>
+      <div class="stat-cell"><div class="l">Volume Lifted</div><div class="v num">${fmtK(totalTon)}<small> ${u}</small></div></div>
+      <div class="stat-cell"><div class="l">Best e1RM</div><div class="v num">${bestE ? round1(bestE) : '—'}<small>${bestE ? ' ' + u : ''}</small></div></div>
+      <div class="stat-cell"><div class="l">Sets · Wk ${cw}</div><div class="v num">${weekSets}</div></div>
     </div>
 
-    <div class="card">
-      <h2 style="display:flex;align-items:center;gap:8px">${mIcon(S.progressMuscle)} Set progression — ${esc(S.progressMuscle)}</h2>
-      <div class="chips scroll" style="margin-bottom:12px">${muscleChips}</div>
-      <div id="chart-sets"></div>
-      <p class="muted small" style="margin:10px 0 0">Completed weeks show logged working sets; upcoming weeks show current targets. Shaded band = recoverable range.</p>
+    <div class="group">
+      <div class="group-header">Weekly Volume by Muscle</div>
+      <div class="list">${volLines}</div>
+      <div class="group-footer">Week ${cw} working sets vs. recoverable range. Orange = below MEV, red = above MRV.</div>
     </div>
 
-    <div class="progress-cols">
-      <div class="card">
-        <h2>Weekly tonnage <span class="muted" style="font-weight:600">(${u})</span></h2>
-        <div id="chart-tonnage"></div>
+    <div class="group">
+      <div class="group-header">Set Progression</div>
+      <div class="list">
+        <div class="chips" style="padding:12px 16px 6px">${muscleChips}</div>
+        <div id="chart-sets"></div>
+      </div>
+      <div class="group-footer">Completed weeks show logged sets; upcoming weeks show targets. Shaded band = MEV–MRV.</div>
+    </div>
+
+    <div class="cols-2" style="margin:0">
+      <div class="group">
+        <div class="group-header">Weekly Tonnage (${u})</div>
+        <div class="list"><div id="chart-tonnage"></div></div>
       </div>
 
-      <div class="card">
-        <h2>Estimated 1RM</h2>
-        ${loggedExIds.length ? `<label class="field"><select id="sel-ex">${exOptions}</select></label><div id="chart-e1rm"></div>` : '<p class="muted small">Log some workouts to see strength trends.</p>'}
+      <div class="group">
+        <div class="group-header">Estimated 1RM</div>
+        <div class="list">
+          ${loggedExIds.length
+            ? `<div style="padding:12px 16px 4px"><select id="sel-ex">${exOptions}</select></div><div id="chart-e1rm"></div>`
+            : '<div class="row"><span class="r-main"><span class="r-title" style="color:var(--label-2)">Log workouts to see strength trends.</span></span></div>'}
+        </div>
       </div>
     </div>`;
 
@@ -1118,24 +1148,20 @@ function renderProgress() {
   if (sel) sel.onchange = () => { S.progressExercise = sel.value; renderProgress(); };
 
   const lm = VOLUME_LANDMARKS[S.progressMuscle];
+  const groupTint = getComputedStyle(document.documentElement).getPropertyValue(
+    { push: '--blue', pull: '--purple', legs: '--teal', core: '--pink' }[gOf(S.progressMuscle)]).trim() || '#007aff';
   barChart($('#chart-sets'), setsData, {
     unit: 'sets',
     zone: lm ? { min: lm.mev, max: lm.mrv } : null,
-    color: `var(--g-${gOf(S.progressMuscle)})`,
+    color: groupTint,
   });
   barChart($('#chart-tonnage'), weeklyTonnage(meso), { unit: u });
   if (trendData.length) lineChart($('#chart-e1rm'), trendData, { unit: u });
-  else if (loggedExIds.length) $('#chart-e1rm').innerHTML = '<p class="muted small">No completed sets for this exercise yet.</p>';
-
-  // sparkline on tonnage tile
-  const sp = $('#spark-ton');
-  if (sp) sparkline(sp, tonSeries.map(d => d.value));
-
-  runCountUps(el);
+  else if (loggedExIds.length) $('#chart-e1rm').innerHTML = '<div class="group-footer" style="padding:0 16px 12px">No completed sets for this exercise yet.</div>';
 }
 
-/* --- minimal original SVG charts: thin marks, rounded data ends, hover tooltip --- */
-const CHART_H = 190, PAD = { t: 16, r: 12, b: 28, l: 38 };
+/* ============================ charts ============================ */
+const CHART_H = 180, PAD = { t: 16, r: 12, b: 26, l: 36 };
 
 function niceMax(v) {
   if (v <= 0) return 4;
@@ -1170,7 +1196,7 @@ function attachTooltip(root, svg, items) {
   svg.addEventListener('pointerleave', hide);
 }
 
-function barChart(root, data, { unit, zone, color = 'var(--accent)' } = {}) {
+function barChart(root, data, { unit, zone, color = 'var(--blue)' } = {}) {
   if (!root) return;
   root.classList.add('viz-root');
   const width = Math.max(root.clientWidth || 320, 280);
@@ -1179,9 +1205,8 @@ function barChart(root, data, { unit, zone, color = 'var(--accent)' } = {}) {
   const { innerW, gy, grid } = chartFrame(width, maxV);
   const n = data.length;
   const slot = innerW / n;
-  const bw = Math.min(28, slot * 0.56);
+  const bw = Math.min(26, slot * 0.5);
 
-  // shaded MEV–MRV zone band behind bars
   let zoneEls = '';
   if (zone) {
     const yTop = gy(zone.max), yBot = gy(zone.min);
@@ -1200,9 +1225,9 @@ function barChart(root, data, { unit, zone, color = 'var(--accent)' } = {}) {
     const h = Math.max(y0 - y, 0);
     const r = Math.min(4, bw / 2, h);
     bars += h > 0
-      ? `<path class="bar" style="animation-delay:${i * 45}ms" d="M${x},${y0} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + bw - r},${y} Q${x + bw},${y} ${x + bw},${y + r} L${x + bw},${y0} Z" fill="${color}"/>`
+      ? `<path class="bar" style="animation-delay:${i * 40}ms" d="M${x},${y0} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + bw - r},${y} Q${x + bw},${y} ${x + bw},${y + r} L${x + bw},${y0} Z" fill="${color}"/>`
       : '';
-    bars += `<text class="axis-label" x="${x + bw / 2}" y="${CHART_H - 9}" text-anchor="middle">${esc(d.label)}</text>`;
+    bars += `<text class="axis-label" x="${x + bw / 2}" y="${CHART_H - 8}" text-anchor="middle">${esc(d.label)}</text>`;
     bars += `<rect data-hit="${i}" x="${PAD.l + slot * i}" y="${PAD.t}" width="${slot}" height="${CHART_H - PAD.t - PAD.b}" fill="transparent"/>`;
     hits.push({ i, x: x + bw / 2, y });
   });
@@ -1227,9 +1252,9 @@ function lineChart(root, data, { unit } = {}) {
 
   const path = data.map((d, i) => `${i ? 'L' : 'M'}${gx(i)},${gy(d.value)}`).join(' ');
   const area = `${path} L${gx(n-1)},${gy(0)} L${gx(0)},${gy(0)} Z`;
-  const dots = data.map((d, i) => `<circle class="dot" style="animation-delay:${300 + i * 70}ms" cx="${gx(i)}" cy="${gy(d.value)}" r="4" fill="var(--accent)" stroke="var(--surface-1)" stroke-width="2"/>`).join('');
+  const dots = data.map((d, i) => `<circle class="dot" style="animation-delay:${280 + i * 60}ms" cx="${gx(i)}" cy="${gy(d.value)}" r="3.6" fill="var(--blue)" stroke="var(--bg-card)" stroke-width="2"/>`).join('');
   const labels = data.map((d, i) => (n <= 6 || i === 0 || i === n - 1 || i % Math.ceil(n / 5) === 0)
-    ? `<text class="axis-label" x="${gx(i)}" y="${CHART_H - 9}" text-anchor="middle">${esc(d.label)}</text>` : '').join('');
+    ? `<text class="axis-label" x="${gx(i)}" y="${CHART_H - 8}" text-anchor="middle">${esc(d.label)}</text>` : '').join('');
   const hitRects = data.map((d, i) => {
     const x0 = i === 0 ? PAD.l : (gx(i - 1) + gx(i)) / 2;
     const x1 = i === n - 1 ? PAD.l + innerW : (gx(i) + gx(i + 1)) / 2;
@@ -1237,8 +1262,8 @@ function lineChart(root, data, { unit } = {}) {
   }).join('');
 
   root.innerHTML = `<svg viewBox="0 0 ${width} ${CHART_H}" role="img" aria-label="line chart">${grid}
-    <path class="area" d="${area}" fill="var(--accent-weak)" stroke="none"/>
-    <path class="line" pathLength="1" d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    <path class="area" d="${area}" fill="color-mix(in srgb, var(--blue) 14%, transparent)" stroke="none"/>
+    <path class="line" pathLength="1" d="${path}" fill="none" stroke="var(--blue)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
     ${dots}${labels}${hitRects}</svg>`;
   const svg = $('svg', root);
   attachTooltip(root, svg, data.map((d, i) => ({
@@ -1248,47 +1273,9 @@ function lineChart(root, data, { unit } = {}) {
   })));
 }
 
-/* tiny sparkline for stat tiles */
-function sparkline(root, values) {
-  if (!root || !values.length) return;
-  const W = 100, H = 26, max = Math.max(...values, 1), min = Math.min(...values, 0);
-  const span = max - min || 1;
-  const n = values.length;
-  const gx = (i) => n === 1 ? W / 2 : (W * i) / (n - 1);
-  const gy = (v) => H - 3 - (H - 6) * (v - min) / span;
-  const path = values.map((v, i) => `${i ? 'L' : 'M'}${gx(i).toFixed(1)},${gy(v).toFixed(1)}`).join(' ');
-  root.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:26px;display:block">
-    <path class="area" d="${path} L${W},${H} L0,${H} Z" fill="var(--accent-weak)"/>
-    <path class="spark-line" pathLength="1" d="${path}" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
-  </svg>`;
-}
-
-/* count-up animation for stat numbers */
-const REDUCE_MOTION = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-function countUp(node, to, fmt = (v) => Math.round(v)) {
-  if (REDUCE_MOTION() || !node) { if (node) node.textContent = fmt(to); return; }
-  const dur = 700, start = performance.now();
-  const tick = (t) => {
-    const p = Math.min(1, (t - start) / dur);
-    const e = 1 - Math.pow(1 - p, 3); // easeOutCubic
-    node.textContent = fmt(to * e);
-    if (p < 1) requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
-}
-function runCountUps(root) {
-  $$('.cv[data-count]', root).forEach(n => {
-    const to = +n.dataset.count;
-    const f = n.dataset.fmt;
-    const fmt = f === 'k' ? fmtK : f === 'dec' ? (v => round1(v)) : (v => Math.round(v));
-    countUp(n, to, fmt);
-  });
-}
-
 /* ============================ haptics / rest / celebrate ============================ */
-/* Vibration API — works on Android/Chrome; iOS Safari has no support, so this
-   is a silent no-op there (progressive enhancement). */
 function haptic(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (_) {} }
+const REDUCE_MOTION = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const Rest = {
   el: null, iv: null, t0: 0, target: 120,
@@ -1296,7 +1283,7 @@ const Rest = {
     if (this.el) return;
     const d = document.createElement('div');
     d.className = 'rest-pill';
-    d.innerHTML = `<span class="rt-lbl">Rest</span><span class="rt-time num">0:00</span><button class="rt-skip" aria-label="Dismiss rest timer">✕</button><span class="rt-bar"><i></i></span>`;
+    d.innerHTML = `<span class="rt-lbl">Rest</span><span class="rt-time num">0:00</span><button class="rt-skip" aria-label="Dismiss rest timer">✕</button>`;
     document.body.appendChild(d);
     d.querySelector('.rt-skip').onclick = () => { haptic(6); this.stop(); };
     this.el = d;
@@ -1310,64 +1297,70 @@ const Rest = {
   render() {
     const s = Math.floor((performance.now() - this.t0) / 1000);
     this.el.querySelector('.rt-time').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-    this.el.querySelector('.rt-bar i').style.width = Math.min(100, s / this.target * 100) + '%';
     if (s >= this.target && !this.el.classList.contains('done')) { this.el.classList.add('done'); haptic(18); }
   },
   stop() { clearInterval(this.iv); this.iv = null; if (this.el) this.el.classList.remove('show'); },
 };
 
-const CONFETTI_COLORS = ['#2f6fe0', '#1a9d4d', '#e0a52a', '#4c8df0', '#7fb0f7', '#d64545'];
+const CONFETTI_COLORS = ['#007aff', '#34c759', '#af52de', '#ff9500', '#30b0c7', '#ff2d55'];
 function celebrate(title, sub) {
   const o = document.createElement('div');
   o.className = 'celebrate';
   let conf = '';
   if (!REDUCE_MOTION()) {
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 26; i++) {
       const left = Math.round(Math.random() * 100);
       const dur = (1.1 + Math.random() * 0.9).toFixed(2);
-      const delay = (Math.random() * 0.35).toFixed(2);
+      const delay = (Math.random() * 0.3).toFixed(2);
       const col = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
       const rot = Math.round(Math.random() * 360);
       conf += `<i style="left:${left}%;background:${col};animation-duration:${dur}s;animation-delay:${delay}s;transform:rotate(${rot}deg)"></i>`;
     }
   }
   o.innerHTML = `<div class="confetti">${conf}</div><div class="cel-card">
-      <div class="cel-check"><svg viewBox="0 0 24 24"><path pathLength="1" d="M4 12.5l5 5 11-11"/></svg></div>
+      <div class="cel-check"><svg viewBox="0 0 24 24"><path pathLength="1" d="M4.5 12.5l4.8 4.8L19.5 7"/></svg></div>
       <div class="cel-title">${esc(title)}</div>
-      ${sub ? `<div class="cel-sub muted">${esc(sub)}</div>` : ''}
+      ${sub ? `<div class="cel-sub">${esc(sub)}</div>` : ''}
     </div>`;
   document.body.appendChild(o);
   haptic([12, 40, 14]);
   requestAnimationFrame(() => o.classList.add('show'));
-  setTimeout(() => { o.classList.remove('show'); setTimeout(() => o.remove(), 320); }, 1600);
+  setTimeout(() => { o.classList.remove('show'); setTimeout(() => o.remove(), 300); }, 1700);
 }
 
-/* ============================ settings / export ============================ */
+/* ============================ settings ============================ */
 function openSettings() {
-  openModal(`
-    <h2>Settings</h2>
-    <label class="field">Units
-      <div class="seg" id="set-units">
-        <button data-v="lb" class="${S.settings.units === 'lb' ? 'active' : ''}">lb</button>
-        <button data-v="kg" class="${S.settings.units === 'kg' ? 'active' : ''}">kg</button>
+  openSheet(`
+    ${sheetHead('Settings')}
+    <div class="group">
+      <div class="group-header">Units</div>
+      <div class="seg" id="set-units" style="margin:0 0 4px">
+        <button data-v="lb" class="${S.settings.units === 'lb' ? 'active' : ''}">Pounds (lb)</button>
+        <button data-v="kg" class="${S.settings.units === 'kg' ? 'active' : ''}">Kilograms (kg)</button>
       </div>
-    </label>
-    <label class="field">Theme
+    </div>
+    <div class="group">
+      <div class="group-header">Appearance</div>
       <div class="seg" id="set-theme">
         <button data-v="auto" class="${(S.settings.theme||'auto') === 'auto' ? 'active' : ''}">Auto</button>
         <button data-v="light" class="${S.settings.theme === 'light' ? 'active' : ''}">Light</button>
         <button data-v="dark" class="${S.settings.theme === 'dark' ? 'active' : ''}">Dark</button>
       </div>
-    </label>
-    <h3>Backup</h3>
-    <p class="muted small">Your data lives only on this device. Export a backup once in a while.</p>
-    <div class="row">
-      <button class="btn block" id="btn-export">Export JSON</button>
-      <button class="btn block" id="btn-import">Import JSON</button>
     </div>
-    <input type="file" id="file-import" accept="application/json" style="display:none">
-    <h3>About</h3>
-    <p class="muted small">MesoForge — a personal hypertrophy planner. Volume autoregulates from your set feedback; effort ramps to 0 RIR before each deload.</p>`);
+    <div class="group">
+      <div class="group-header">Backup</div>
+      <div class="list">
+        <button class="row action" id="btn-export"><span class="r-title">Export Backup…</span></button>
+        <button class="row action" id="btn-import"><span class="r-title">Restore from Backup…</span></button>
+      </div>
+      <div class="group-footer">Your data lives only on this device. Export a JSON backup once in a while.</div>
+      <input type="file" id="file-import" accept="application/json" style="display:none">
+    </div>
+    <div class="group">
+      <div class="group-footer" style="padding-top:0">MesoForge — a personal hypertrophy planner. Volume autoregulates from your set feedback; effort ramps to 0 RIR before each deload.</div>
+    </div>`);
+
+  $('[data-sheet-done]').onclick = closeSheet;
 
   $$('#set-units button').forEach(b => b.onclick = () => {
     S.settings.units = b.dataset.v; saveSettings();
@@ -1402,7 +1395,7 @@ function openSettings() {
       for (const x of S.workouts) await idb.put('workouts', x);
       await saveSettings();
       applyTheme();
-      closeModal(); render(); toast('Backup restored');
+      closeSheet(); render(); toast('Backup restored');
     } catch { toast('Could not read that file'); }
   };
 }
@@ -1416,13 +1409,11 @@ async function main() {
     if (b) switchTab(b.dataset.tab);
   });
   $('#btn-settings').onclick = openSettings;
-  $('#btn-theme').onclick = () => {
-    const cur = S.settings.theme || 'auto';
-    S.settings.theme = cur === 'auto' ? 'dark' : cur === 'dark' ? 'light' : 'auto';
-    saveSettings(); applyTheme();
-    toast('Theme: ' + S.settings.theme);
-  };
-  $('#modal-scrim').addEventListener('click', (e) => { if (e.target.id === 'modal-scrim') closeModal(); });
+  $('#modal-scrim').addEventListener('click', (e) => { if (e.target.id === 'modal-scrim') closeSheet(); });
+
+  // large-title collapse: raise compact nav on scroll
+  const nav = $('#nav');
+  addEventListener('scroll', () => nav.classList.toggle('raised', scrollY > 30), { passive: true });
 
   switchTab('train');
 
