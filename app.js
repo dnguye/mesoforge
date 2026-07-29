@@ -652,17 +652,42 @@ function renderWorkout() {
   $$('[data-w]', el).forEach(saveField('w', 'weight'));
   $$('[data-r]', el).forEach(saveField('r', 'reps'));
 
+  const updateWkProgress = () => {
+    let d = 0, t = 0;
+    w.entries.forEach(en => { t += Math.max(en.targetSets, en.sets.length); d += en.sets.filter(x => x.done).length; });
+    const pct = t ? Math.round(100 * d / t) : 0;
+    const fill = $('.wk-progress .progress-fill', el); if (fill) fill.style.width = pct + '%';
+    const lbl = $('.wk-progress .lbl', el); if (lbl) lbl.textContent = `${d}/${t} sets`;
+  };
+  const flash = (node, cls) => { if (!node) return; node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); };
+
   $$('[data-d]', el).forEach(btn => btn.onclick = () => {
     const [ei, si] = btn.dataset.d.split(':').map(Number);
     const en = w.entries[ei];
     while (en.sets.length <= si) en.sets.push({ weight: null, reps: null, done: false });
     const s = en.sets[si];
+    const nowDone = !s.done;
     // adopt suggestion if fields left empty
-    if (!s.done && s.weight == null && en.suggest) s.weight = en.suggest.weight;
-    if (!s.done && s.reps == null && en.suggest) s.reps = en.suggest.reps;
-    s.done = !s.done;
+    if (nowDone && s.weight == null && en.suggest) s.weight = en.suggest.weight;
+    if (nowDone && s.reps == null && en.suggest) s.reps = en.suggest.reps;
+    s.done = nowDone;
     saveWorkout(w);
-    renderWorkout();
+
+    // in-place UI update (snappy, no full re-render) + tactile feedback
+    const wInp = $(`[data-w="${ei}:${si}"]`, el), rInp = $(`[data-r="${ei}:${si}"]`, el);
+    if (wInp && s.weight != null) { wInp.value = s.weight; wInp.classList.add('filled'); }
+    if (rInp && s.reps != null) { rInp.value = s.reps; rInp.classList.add('filled'); }
+    btn.classList.toggle('done', nowDone);
+    const block = btn.closest('.exercise-block');
+    const wasComplete = block && block.classList.contains('complete');
+    const enDone = en.sets.length && en.sets.every(x => x.done) && en.sets.length >= en.targetSets;
+    if (block) block.classList.toggle('complete', enDone);
+    if (nowDone) {
+      flash(btn, 'pop');
+      flash(btn.closest('.set-grid'), 'flash');
+      if (enDone && !wasComplete) flash(block, 'jc');
+    }
+    updateWkProgress();
   });
 
   $$('[data-addset]', el).forEach(btn => btn.onclick = () => {
@@ -1013,7 +1038,7 @@ function renderProgress() {
     const zL = 100 * lm.mev / scaleMax, zR = 100 * lm.mrv / scaleMax;
     return `
       <div class="volume-row">
-        <div class="vol-muscle">${mIcon(m, 'm-ic sm')}${esc(m)}</div>
+        <div class="vol-muscle"><span class="m-plate">${mIcon(m)}</span>${esc(m)}</div>
         <div class="vol-track">
           <div class="vol-zone" style="left:${zL}%;width:${zR - zL}%"></div>
           <div class="vol-zone-line" style="left:${zL}%"></div>
