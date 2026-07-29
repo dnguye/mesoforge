@@ -284,22 +284,25 @@ label.field > * { margin-top: 6px; }
 .seg button:hover { background: var(--surface-2); }
 .seg button.active { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 
-/* ---------------- today hero ---------------- */
+/* ---------------- today hero (immersive image card) ---------------- */
 .today-hero {
   position: relative; overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--surface-1);
-  border-radius: var(--r-lg); padding: 18px; margin-bottom: 14px;
-  box-shadow: var(--shadow-1);
+  border: 1px solid rgba(255,255,255,.10);
+  background: #0b0f17 url("icons/hero-bg.jpg") right center / cover no-repeat;
+  border-radius: var(--r-lg); padding: 20px; margin-bottom: 16px;
+  box-shadow: 0 6px 22px rgba(6,10,18,.28);
+  color: #fff;
 }
 .today-hero::after {
-  content: ""; position: absolute; right: -40px; top: -40px; width: 150px; height: 150px;
-  background: var(--accent-weak); border-radius: 50%; z-index: 0;
+  content: ""; position: absolute; inset: 0; z-index: 0;
+  background: linear-gradient(105deg, rgba(8,11,18,.94) 0%, rgba(8,11,18,.80) 38%, rgba(8,11,18,.42) 72%, rgba(8,11,18,.30) 100%);
 }
 .today-hero > * { position: relative; z-index: 1; }
-.hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--accent-ink); }
-.hero-title { font-size: 34px; font-weight: 800; letter-spacing: -.02em; line-height: 1.05; margin: 3px 0 2px; }
-.hero-meta { font-size: 13.5px; color: var(--ink-2); }
+.hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #7fb0f7; }
+.hero-title { font-size: 36px; font-weight: 800; letter-spacing: -.02em; line-height: 1.04; margin: 4px 0 3px; color: #fff; text-shadow: 0 1px 12px rgba(0,0,0,.4); }
+.hero-meta { font-size: 13.5px; color: rgba(255,255,255,.85); }
+.today-hero .progress-track { background: rgba(255,255,255,.20); }
+.today-hero .progress-fill { background: #4c8df0; }
 .hero-badge {
   display: inline-flex; align-items: center; gap: 5px; margin-top: 2px;
   font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
@@ -320,6 +323,37 @@ label.field > * { margin-top: 6px; }
 .stat-tile .v small { font-size: 14px; font-weight: 600; color: var(--ink-muted); }
 .stat-tile .l { font-size: 11.5px; color: var(--ink-muted); margin-top: 3px; font-weight: 500; }
 .stat-tile .spark { margin-top: 8px; }
+
+/* ---------------- muscle icons ---------------- */
+.m-ic { width: 24px; height: 24px; object-fit: contain; display: block; flex: 0 0 auto; }
+.m-ic.sm { width: 22px; height: 22px; }
+.m-ic.lg { width: 30px; height: 30px; }
+.m-badge {
+  width: 40px; height: 40px; flex: 0 0 auto; border-radius: 11px;
+  background: var(--surface-3); display: grid; place-items: center;
+}
+.m-badge .m-ic { width: 28px; height: 28px; }
+
+/* ---------------- this-week volume balance ---------------- */
+.balance-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 8px;
+}
+.bal-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 10px 4px 8px; border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface-2); cursor: pointer; transition: border-color .15s, transform .05s;
+}
+.bal-cell:hover { border-color: var(--border-2); }
+.bal-cell:active { transform: scale(.97); }
+.bal-cell .bal-n { font-size: 15px; font-weight: 750; line-height: 1; font-variant-numeric: tabular-nums; }
+.bal-cell .bal-name { font-size: 9.5px; color: var(--ink-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+.bal-cell .m-ic { width: 30px; height: 30px; }
+.bal-cell .bal-dot { width: 100%; height: 3px; border-radius: 2px; margin-top: 1px; }
+.bal-dot.under { background: var(--warn); }
+.bal-dot.optimal { background: var(--accent); }
+.bal-dot.over { background: var(--over); }
+.balance-summary { font-size: 12.5px; color: var(--ink-muted); margin-top: 12px; display: flex; gap: 14px; flex-wrap: wrap; }
+.balance-summary b { color: var(--ink-1); font-weight: 700; }
 
 /* ---------------- week strip ---------------- */
 .week-strip { display: flex; gap: 7px; overflow-x: auto; padding: 2px 0 6px; -ms-overflow-style: none; scrollbar-width: none; }
@@ -371,9 +405,11 @@ label.field > * { margin-top: 6px; }
 .ex-head { display: flex; align-items: center; gap: 9px; margin-bottom: 3px; }
 .ex-name { font-weight: 700; font-size: 15.5px; flex: 1; min-width: 0; }
 .muscle-tag {
+  display: inline-flex; align-items: center; gap: 4px;
   font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--accent-ink); background: var(--accent-weak); border-radius: 6px; padding: 3px 8px; white-space: nowrap;
+  color: var(--accent-ink); background: var(--accent-weak); border-radius: 6px; padding: 3px 8px 3px 6px; white-space: nowrap;
 }
+.muscle-tag .m-ic { width: 14px; height: 14px; }
 .target-line { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 12px; }
 .target-line b { color: var(--ink-2); font-weight: 650; }
 
@@ -417,16 +453,18 @@ label.field > * { margin-top: 6px; }
 .lib-item:last-child { border-bottom: none; }
 .lib-item:hover { background: var(--surface-2); }
 .lib-item .eq-icon {
-  width: 34px; height: 34px; flex: 0 0 auto; border-radius: 9px; background: var(--surface-2);
+  width: 40px; height: 40px; flex: 0 0 auto; border-radius: 11px; background: var(--surface-3);
   display: grid; place-items: center; color: var(--ink-muted); font-size: 11px; font-weight: 800;
 }
+.lib-item .eq-icon .m-ic { width: 28px; height: 28px; }
+.lib-item .eq-badge { font-size: 10px; font-weight: 700; color: var(--ink-muted); background: var(--surface-3); border-radius: 5px; padding: 1px 5px; margin-left: 4px; }
 .lib-item .name { font-weight: 650; font-size: 14.5px; }
 .lib-item .eq { font-size: 12px; color: var(--ink-muted); margin-top: 1px; }
 
 /* ---------------- progress: muscle volume overview ---------------- */
 .volume-list { display: flex; flex-direction: column; gap: 13px; }
-.volume-row { display: grid; grid-template-columns: 78px 1fr auto; gap: 10px; align-items: center; }
-.vol-muscle { font-size: 12.5px; font-weight: 650; color: var(--ink-2); }
+.volume-row { display: grid; grid-template-columns: 104px 1fr auto; gap: 10px; align-items: center; }
+.vol-muscle { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 650; color: var(--ink-2); }
 .vol-track {
   position: relative; height: 20px; border-radius: 6px; background: var(--surface-2);
   overflow: hidden; border: 1px solid var(--border);

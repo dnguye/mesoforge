@@ -1,5 +1,5 @@
 /* MesoForge service worker — cache-first app shell for offline use */
-const CACHE = 'mesoforge-v3';
+const CACHE = 'mesoforge-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -8,7 +8,12 @@ const ASSETS = [
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/empty-hero.png'
+  './icons/empty-hero.png',
+  './icons/hero-bg.jpg',
+  './icons/m/chest.png', './icons/m/back.png', './icons/m/shoulders.png',
+  './icons/m/biceps.png', './icons/m/triceps.png', './icons/m/quads.png',
+  './icons/m/hamstrings.png', './icons/m/glutes.png', './icons/m/calves.png',
+  './icons/m/abs.png'
 ];
 
 self.addEventListener('install', (e) => {

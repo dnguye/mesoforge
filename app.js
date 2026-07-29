@@ -169,6 +169,9 @@ const I = {
 };
 const icon = (name, cls='') => `<span class="${cls}" aria-hidden="true">${I[name] || ''}</span>`;
 const EQ_ABBR = { Barbell:'BB', Dumbbell:'DB', Machine:'MA', Cable:'CB', Bodyweight:'BW', Other:'—' };
+const MUSCLE_ICON = (m) => `icons/m/${String(m).toLowerCase()}.png`;
+const mIcon = (m, cls='m-ic') => `<img class="${cls}" src="${MUSCLE_ICON(m)}" alt="" loading="lazy">`;
+const MSHORT = { Chest:'Chest', Back:'Back', Shoulders:'Delts', Biceps:'Biceps', Triceps:'Triceps', Quads:'Quads', Hamstrings:'Hams', Glutes:'Glutes', Calves:'Calves', Abs:'Abs' };
 
 /* ============================ tiny utils ============================ */
 const $ = (sel, el=document) => el.querySelector(sel);
@@ -521,6 +524,17 @@ function renderTrain() {
       </div>`;
   }).join('');
 
+  // this-week volume balance (muscle icons + status)
+  const planMuscles = MUSCLES.filter(m => meso.days.some(d => d.slots.some(s => s.muscle === m)));
+  let nUnder = 0, nOpt = 0, nOver = 0;
+  const balCells = planMuscles.map(m => {
+    const lm = VOLUME_LANDMARKS[m] || { mev: 6, mrv: 18 };
+    const sets = weeklyMuscleTotal(meso, cw, m);
+    const st = sets < lm.mev ? 'under' : sets > lm.mrv ? 'over' : 'optimal';
+    st === 'under' ? nUnder++ : st === 'over' ? nOver++ : nOpt++;
+    return `<button class="bal-cell" data-goprog aria-label="${esc(m)} ${sets} sets"><img class="m-ic" src="${MUSCLE_ICON(m)}" alt=""><span class="bal-n">${sets}</span><span class="bal-name">${esc(MSHORT[m] || m)}</span><span class="bal-dot ${st}"></span></button>`;
+  }).join('');
+
   el.innerHTML = `
     <div class="today-hero">
       <div class="hero-eyebrow">${esc(meso.name)}</div>
@@ -536,9 +550,22 @@ function renderTrain() {
 
     <div class="section-title">Schedule</div>
     <div class="week-strip">${weekPills}</div>
-    <div style="margin-top:12px">${days}</div>`;
+    <div style="margin-top:12px">${days}</div>
+
+    <div class="section-title" style="margin-top:22px">This week’s volume</div>
+    <div class="card">
+      <div class="balance-grid">${balCells}</div>
+      <div class="balance-summary">
+        <span><b>${nOpt}</b> in range</span>
+        ${nUnder ? `<span style="color:var(--warn)"><b>${nUnder}</b> below target</span>` : ''}
+        ${nOver ? `<span style="color:var(--over)"><b>${nOver}</b> over</span>` : ''}
+        <span class="spacer"></span>
+        <span class="muted" style="font-size:12px">Tap → Progress</span>
+      </div>
+    </div>`;
 
   if (nextDay) $('#btn-hero-start').onclick = () => { S.activeWorkoutId = nextDay.w.id; switchTab('workout'); };
+  $$('[data-goprog]', el).forEach(b => b.onclick = () => switchTab('progress'));
   $$('.week-pill', el).forEach(b => b.onclick = () => { S.planWeek = +b.dataset.week; renderTrain(); });
   $$('[data-start]', el).forEach(b => b.onclick = () => { S.activeWorkoutId = b.dataset.start; switchTab('workout'); });
   $$('[data-view-workout]', el).forEach(b => b.onclick = () => { S.activeWorkoutId = b.dataset.viewWorkout; switchTab('workout'); });
@@ -583,6 +610,7 @@ function renderWorkout() {
     return `
       <div class="card exercise-block ${enDone ? 'complete' : ''}">
         <div class="ex-head">
+          <span class="m-badge">${mIcon(en.muscle)}</span>
           <span class="ex-name">${esc(ex ? ex.name : 'Unknown')}</span>
           <span class="muscle-tag">${esc(en.muscle)}</span>
           ${readonly ? '' : `<button class="icon-btn" data-swap="${ei}" title="Swap exercise" aria-label="Swap exercise">${icon('swap')}</button>`}
@@ -905,7 +933,7 @@ function renderLibrary() {
     <div class="card flush" style="margin-top:12px">
       ${list.map(e => `
         <div class="lib-item">
-          <div class="eq-icon">${EQ_ABBR[e.eq] || '—'}</div>
+          <div class="eq-icon">${mIcon(e.muscle)}</div>
           <div style="flex:1"><div class="name">${esc(e.name)}</div><div class="eq">${esc(e.muscle)} · ${esc(e.eq)}${e.custom ? ' · custom' : ''}</div></div>
           ${e.custom ? `<button class="btn small danger" data-del-ex="${e.id}">Remove</button>` : ''}
         </div>`).join('') || '<div style="padding:20px"><p class="muted" style="text-align:center;margin:0">Nothing here.</p></div>'}
@@ -985,7 +1013,7 @@ function renderProgress() {
     const zL = 100 * lm.mev / scaleMax, zR = 100 * lm.mrv / scaleMax;
     return `
       <div class="volume-row">
-        <div class="vol-muscle">${esc(m)}</div>
+        <div class="vol-muscle">${mIcon(m, 'm-ic sm')}${esc(m)}</div>
         <div class="vol-track">
           <div class="vol-zone" style="left:${zL}%;width:${zR - zL}%"></div>
           <div class="vol-zone-line" style="left:${zL}%"></div>
@@ -1017,7 +1045,7 @@ function renderProgress() {
     </div>
 
     <div class="card">
-      <h2>Set progression — ${esc(S.progressMuscle)}</h2>
+      <h2 style="display:flex;align-items:center;gap:8px">${mIcon(S.progressMuscle)} Set progression — ${esc(S.progressMuscle)}</h2>
       <div class="chips scroll" style="margin-bottom:12px">${muscleChips}</div>
       <div id="chart-sets"></div>
       <p class="muted small" style="margin:10px 0 0">Completed weeks show logged working sets; upcoming weeks show current targets. Shaded band = recoverable range.</p>
