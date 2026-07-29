@@ -173,6 +173,18 @@ const MUSCLE_ICON = (m) => `icons/m/${String(m).toLowerCase()}.png`;
 const mIcon = (m, cls='m-ic') => `<img class="${cls}" src="${MUSCLE_ICON(m)}" alt="" loading="lazy">`;
 const MSHORT = { Chest:'Chest', Back:'Back', Shoulders:'Delts', Biceps:'Biceps', Triceps:'Triceps', Quads:'Quads', Hamstrings:'Hams', Glutes:'Glutes', Calves:'Calves', Abs:'Abs' };
 
+/* training-group identity: fixed categorical mapping (push/pull/legs/core) */
+const MGROUP = {
+  Chest:'push', Shoulders:'push', Triceps:'push',
+  Back:'pull', Biceps:'pull',
+  Quads:'legs', Hamstrings:'legs', Glutes:'legs', Calves:'legs',
+  Abs:'core',
+};
+const GROUP_LABEL = { push:'Push', pull:'Pull', legs:'Legs', core:'Core' };
+const gOf = (m) => MGROUP[m] || 'push';
+const gCls = (m) => 'g-' + gOf(m);
+const dayGroups = (day) => [...new Set(day.slots.map(s => gOf(s.muscle)))];
+
 /* ============================ tiny utils ============================ */
 const $ = (sel, el=document) => el.querySelector(sel);
 const $$ = (sel, el=document) => [...el.querySelectorAll(sel)];
@@ -519,6 +531,7 @@ function renderTrain() {
         <div class="day-main">
           <div class="day-title">${esc(day.name)}</div>
           <div class="day-meta">${ready ? totalSets + ' sets · ' + (done ? 'completed' + (w.date ? ' · ' + w.date : '') : isNext ? 'up next' : 'ready') : 'unlocks after last week’s session'}</div>
+          <div class="day-dots">${dayGroups(day).map(g => `<span class="group-dot g-${g}" title="${GROUP_LABEL[g]}"></span>`).join('')}</div>
         </div>
         ${ready && !done ? `<button class="btn ${isNext ? 'primary' : 'ghost'} small" data-start="${w.id}">${w.entries.some(e => e.sets.length) ? 'Resume' : 'Start'}</button>` : ''}
         ${done ? `<button class="btn subtle small" data-view-workout="${w.id}">View</button>` : ''}
@@ -533,7 +546,7 @@ function renderTrain() {
     const sets = weeklyMuscleTotal(meso, cw, m);
     const st = sets < lm.mev ? 'under' : sets > lm.mrv ? 'over' : 'optimal';
     st === 'under' ? nUnder++ : st === 'over' ? nOver++ : nOpt++;
-    return `<button class="bal-cell" data-goprog aria-label="${esc(m)} ${sets} sets"><img class="m-ic" src="${MUSCLE_ICON(m)}" alt=""><span class="bal-n">${sets}</span><span class="bal-name">${esc(MSHORT[m] || m)}</span><span class="bal-dot ${st}"></span></button>`;
+    return `<button class="bal-cell ${gCls(m)}" data-goprog aria-label="${esc(m)} ${sets} sets"><span class="m-plate"><img class="m-ic" src="${MUSCLE_ICON(m)}" alt=""></span><span class="bal-n">${sets}</span><span class="bal-name">${esc(MSHORT[m] || m)}</span><span class="bal-dot ${st}"></span></button>`;
   }).join('');
 
   el.innerHTML = `
@@ -555,6 +568,7 @@ function renderTrain() {
 
     <div class="section-title" style="margin-top:22px">This week’s volume</div>
     <div class="card">
+      <div class="row wrap" style="margin-bottom:12px">${['push','pull','legs','core'].map(g => `<span class="group-chip g-${g}"><span class="group-dot"></span>${GROUP_LABEL[g]}</span>`).join('')}</div>
       <div class="balance-grid">${balCells}</div>
       <div class="balance-summary">
         <span><b>${nOpt}</b> in range</span>
@@ -611,9 +625,9 @@ function renderWorkout() {
     return `
       <div class="card exercise-block ${enDone ? 'complete' : ''}">
         <div class="ex-head">
-          <span class="m-badge">${mIcon(en.muscle)}</span>
+          <span class="m-badge ${gCls(en.muscle)}">${mIcon(en.muscle)}</span>
           <span class="ex-name">${esc(ex ? ex.name : 'Unknown')}</span>
-          <span class="muscle-tag">${esc(en.muscle)}</span>
+          <span class="muscle-tag ${gCls(en.muscle)}">${esc(en.muscle)}</span>
           ${readonly ? '' : `<button class="icon-btn" data-swap="${ei}" title="Swap exercise" aria-label="Swap exercise">${icon('swap')}</button>`}
         </div>
         <div class="target-line"><b>${en.targetSets} set${en.targetSets > 1 ? 's' : ''}</b> · ${en.targetRIR}${deload ? '+' : ''} RIR${en.suggest ? ` · last time <b>${en.suggest.weight}${u} × ${en.suggest.reps}</b>` : ''}</div>
@@ -730,8 +744,8 @@ function openFeedbackModal(meso, w) {
   const deload = isDeload(meso, w.week);
   const fbSection = deload ? '<p class="muted">Deload week — no feedback needed. Enjoy the recovery. 🧘</p>' :
     muscles.map(m => `
-      <div class="fb-group">
-        <h3><span class="muscle-dot"></span>${esc(m)}</h3>
+      <div class="fb-group ${gCls(m)}">
+        <h3><span class="muscle-dot" style="background:var(--gc)"></span>${esc(m)}</h3>
         <div class="fb-label">Soreness coming in</div>
         <div class="seg grow" data-fb="${m}:soreness">
           <button data-v="0">Healed early</button><button data-v="1">Just in time</button><button data-v="2">Still sore</button>
@@ -815,6 +829,7 @@ function renderPlan() {
             <button class="icon-btn" data-del-meso="${m.id}" aria-label="Delete" style="color:var(--over)">✕</button>
           </div>
         </div>
+        <div class="program-days">${m.days.map(d => `<span class="program-day">${esc(d.name)}<span class="dots">${dayGroups(d).map(g => `<span class="group-dot g-${g}" title="${GROUP_LABEL[g]}"></span>`).join('')}</span></span>`).join('')}</div>
         <div class="progress-track" style="margin-top:12px"><div class="progress-fill" style="width:${Math.round(100*done/total)}%"></div></div>
       </div>`;
     }).join('')}`;
@@ -953,7 +968,7 @@ function renderWizard() {
 function renderLibrary() {
   const el = $('#view-library');
   const filter = S.libFilter || 'All';
-  const chips = ['All', ...MUSCLES].map(m => `<button class="chip ${m === filter ? 'active' : ''}" data-m="${m}">${m}</button>`).join('');
+  const chips = ['All', ...MUSCLES].map(m => `<button class="chip ${m === 'All' ? '' : gCls(m)} ${m === filter ? 'active' : ''}" data-m="${m}">${m}</button>`).join('');
   const list = S.exercises
     .filter(e => filter === 'All' || e.muscle === filter)
     .sort((a, b) => a.muscle === b.muscle ? a.name.localeCompare(b.name) : MUSCLES.indexOf(a.muscle) - MUSCLES.indexOf(b.muscle));
@@ -964,7 +979,7 @@ function renderLibrary() {
     <div class="card flush" style="margin-top:12px">
       ${list.map(e => `
         <div class="lib-item">
-          <div class="eq-icon">${mIcon(e.muscle)}</div>
+          <div class="eq-icon ${gCls(e.muscle)}">${mIcon(e.muscle)}</div>
           <div style="flex:1"><div class="name">${esc(e.name)}</div><div class="eq">${esc(e.muscle)} · ${esc(e.eq)}${e.custom ? ' · custom' : ''}</div></div>
           ${e.custom ? `<button class="btn small danger" data-del-ex="${e.id}">Remove</button>` : ''}
         </div>`).join('') || '<div style="padding:20px"><p class="muted" style="text-align:center;margin:0">Nothing here.</p></div>'}
@@ -1044,7 +1059,7 @@ function renderProgress() {
     const zL = 100 * lm.mev / scaleMax, zR = 100 * lm.mrv / scaleMax;
     return `
       <div class="volume-row">
-        <div class="vol-muscle"><span class="m-plate">${mIcon(m)}</span>${esc(m)}</div>
+        <div class="vol-muscle ${gCls(m)}"><span class="m-plate">${mIcon(m)}</span>${esc(m)}</div>
         <div class="vol-track">
           <div class="vol-zone" style="left:${zL}%;width:${zR - zL}%"></div>
           <div class="vol-zone-line" style="left:${zL}%"></div>
@@ -1055,7 +1070,7 @@ function renderProgress() {
       </div>`;
   }).join('');
 
-  const muscleChips = MUSCLES.map(m => `<button class="chip ${m === S.progressMuscle ? 'active' : ''}" data-pm="${m}">${m}</button>`).join('');
+  const muscleChips = MUSCLES.map(m => `<button class="chip ${gCls(m)} ${m === S.progressMuscle ? 'active' : ''}" data-pm="${m}">${m}</button>`).join('');
   const setsData = weeklySetsForMuscle(meso, S.progressMuscle);
   const trendData = S.progressExercise ? e1rmTrend(S.progressExercise) : [];
   const exOptions = loggedExIds.map(id => { const e = exById(id); return e ? `<option value="${id}" ${id === S.progressExercise ? 'selected' : ''}>${esc(e.name)}</option>` : ''; }).join('');
@@ -1102,6 +1117,7 @@ function renderProgress() {
   barChart($('#chart-sets'), setsData, {
     unit: 'sets',
     zone: lm ? { min: lm.mev, max: lm.mrv } : null,
+    color: `var(--g-${gOf(S.progressMuscle)})`,
   });
   barChart($('#chart-tonnage'), weeklyTonnage(meso), { unit: u });
   if (trendData.length) lineChart($('#chart-e1rm'), trendData, { unit: u });
@@ -1150,7 +1166,7 @@ function attachTooltip(root, svg, items) {
   svg.addEventListener('pointerleave', hide);
 }
 
-function barChart(root, data, { unit, zone } = {}) {
+function barChart(root, data, { unit, zone, color = 'var(--accent)' } = {}) {
   if (!root) return;
   root.classList.add('viz-root');
   const width = Math.max(root.clientWidth || 320, 280);
@@ -1180,7 +1196,7 @@ function barChart(root, data, { unit, zone } = {}) {
     const h = Math.max(y0 - y, 0);
     const r = Math.min(4, bw / 2, h);
     bars += h > 0
-      ? `<path class="bar" style="animation-delay:${i * 45}ms" d="M${x},${y0} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + bw - r},${y} Q${x + bw},${y} ${x + bw},${y + r} L${x + bw},${y0} Z" fill="var(--accent)"/>`
+      ? `<path class="bar" style="animation-delay:${i * 45}ms" d="M${x},${y0} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + bw - r},${y} Q${x + bw},${y} ${x + bw},${y + r} L${x + bw},${y0} Z" fill="${color}"/>`
       : '';
     bars += `<text class="axis-label" x="${x + bw / 2}" y="${CHART_H - 9}" text-anchor="middle">${esc(d.label)}</text>`;
     bars += `<rect data-hit="${i}" x="${PAD.l + slot * i}" y="${PAD.t}" width="${slot}" height="${CHART_H - PAD.t - PAD.b}" fill="transparent"/>`;

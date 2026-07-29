@@ -39,6 +39,16 @@
   --over:     #d64545;
   --over-weak:#fbe6e6;
 
+  /* training-group identity (categorical, fixed order: push pull legs core) */
+  --g-push:      #2f6fe0;
+  --g-push-weak: #e7f0fd;
+  --g-pull:      #7c4fd6;
+  --g-pull-weak: #f0eafc;
+  --g-legs:      #0d9488;
+  --g-legs-weak: #d9f3f0;
+  --g-core:      #c9366f;
+  --g-core-weak: #fae8f0;
+
   /* geometry */
   --r-sm: 10px;
   --r:    14px;
@@ -73,6 +83,10 @@
     --good:     #34c46f;  --good-weak:#12271a;
     --warn:     #e0a52a;  --warn-weak:#2a2410;
     --over:     #f0605f;  --over-weak:#2c1414;
+    --g-push:   #5b93ee;  --g-push-weak: #17273f;
+    --g-pull:   #a284ef;  --g-pull-weak: #251b3e;
+    --g-legs:   #31c2b2;  --g-legs-weak: #0e2825;
+    --g-core:   #ef6f9f;  --g-core-weak: #331321;
     --shadow-1: none;
     --shadow-2: 0 8px 28px rgba(0,0,0,.5);
   }
@@ -98,6 +112,10 @@
   --good:     #34c46f;  --good-weak:#12271a;
   --warn:     #e0a52a;  --warn-weak:#2a2410;
   --over:     #f0605f;  --over-weak:#2c1414;
+  --g-push:   #5b93ee;  --g-push-weak: #17273f;
+  --g-pull:   #a284ef;  --g-pull-weak: #251b3e;
+  --g-legs:   #31c2b2;  --g-legs-weak: #0e2825;
+  --g-core:   #ef6f9f;  --g-core-weak: #331321;
   --shadow-1: none;
   --shadow-2: 0 8px 28px rgba(0,0,0,.5);
 }
@@ -144,8 +162,8 @@ h1,h2,h3 { font-weight: 700; letter-spacing: -0.01em; }
 .brand-mark {
   width: 30px; height: 30px; flex: 0 0 auto;
   display: grid; place-items: center;
-  border-radius: 9px; background: var(--accent);
-  color: var(--on-accent);
+  border-radius: 9px; background: #0e1420;
+  border: 1px solid rgba(255,255,255,.08);
 }
 .brand-mark svg { width: 19px; height: 19px; display: block; }
 .brand-text { min-width: 0; }
@@ -275,7 +293,7 @@ label.field > * { margin-top: 6px; }
   transition: background .15s, color .15s, border-color .15s;
 }
 .chip:hover { background: var(--surface-2); }
-.chip.active { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.chip.active { background: var(--gc, var(--accent)); border-color: var(--gc, var(--accent)); color: var(--on-accent); }
 
 /* ---------------- segmented control ---------------- */
 .seg { display: flex; gap: 6px; margin-top: 6px; }
@@ -328,13 +346,27 @@ label.field > * { margin-top: 6px; }
 .stat-tile .l { font-size: 11.5px; color: var(--ink-muted); margin-top: 3px; font-weight: 500; }
 .stat-tile .spark { margin-top: 8px; }
 
+/* ---------------- training-group identity ---------------- */
+.g-push { --gc: var(--g-push); --gc-weak: var(--g-push-weak); }
+.g-pull { --gc: var(--g-pull); --gc-weak: var(--g-pull-weak); }
+.g-legs { --gc: var(--g-legs); --gc-weak: var(--g-legs-weak); }
+.g-core { --gc: var(--g-core); --gc-weak: var(--g-core-weak); }
+
+.group-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gc, var(--accent)); display: inline-block; flex: 0 0 auto; }
+.group-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--gc, var(--accent)); background: var(--gc-weak, var(--accent-weak));
+  border-radius: var(--r-pill); padding: 3px 9px; white-space: nowrap;
+}
+
 /* ---------------- muscle icons ---------------- */
 .m-ic { width: 24px; height: 24px; object-fit: contain; display: block; flex: 0 0 auto; }
 .m-ic.sm { width: 22px; height: 22px; }
 .m-ic.lg { width: 30px; height: 30px; }
 .m-badge {
   width: 40px; height: 40px; flex: 0 0 auto; border-radius: 11px;
-  background: var(--surface-3); display: grid; place-items: center;
+  background: var(--gc-weak, var(--surface-3)); display: grid; place-items: center;
 }
 .m-badge .m-ic { width: 28px; height: 28px; }
 
@@ -351,7 +383,8 @@ label.field > * { margin-top: 6px; }
 .bal-cell:active { transform: scale(.97); }
 .bal-cell .bal-n { font-size: 15px; font-weight: 750; line-height: 1; font-variant-numeric: tabular-nums; }
 .bal-cell .bal-name { font-size: 9.5px; color: var(--ink-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
-.bal-cell .m-ic { width: 30px; height: 30px; }
+.bal-cell .m-plate { width: 34px; height: 34px; border-radius: 9px; background: var(--gc-weak, var(--surface-3)); display: grid; place-items: center; }
+.bal-cell .m-ic { width: 26px; height: 26px; }
 .bal-cell .bal-dot { width: 100%; height: 3px; border-radius: 2px; margin-top: 1px; }
 .bal-dot.under { background: var(--warn); }
 .bal-dot.optimal { background: var(--accent); }
@@ -389,6 +422,8 @@ label.field > * { margin-top: 6px; }
 .day-main { flex: 1; min-width: 0; }
 .day-title { font-weight: 700; font-size: 15px; }
 .day-meta { font-size: 12.5px; color: var(--ink-muted); margin-top: 1px; }
+.day-dots { display: flex; gap: 4px; margin-top: 6px; }
+.day-dots .group-dot { width: 7px; height: 7px; }
 .day-locked { opacity: .6; }
 
 /* ---------------- workout logging ---------------- */
@@ -411,7 +446,8 @@ label.field > * { margin-top: 6px; }
 .muscle-tag {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--accent-ink); background: var(--accent-weak); border-radius: 6px; padding: 3px 8px 3px 6px; white-space: nowrap;
+  color: var(--gc, var(--accent-ink)); background: var(--gc-weak, var(--accent-weak));
+  border-radius: 6px; padding: 3px 8px 3px 6px; white-space: nowrap;
 }
 .muscle-tag .m-ic { width: 14px; height: 14px; }
 .target-line { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 12px; }
@@ -445,6 +481,15 @@ label.field > * { margin-top: 6px; }
 .meso-card { padding: 15px; }
 .meso-title { font-weight: 700; font-size: 15.5px; }
 .meso-meta { font-size: 12.5px; color: var(--ink-muted); margin-top: 2px; }
+.program-days { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+.program-day {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 650; color: var(--ink-2);
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 4px 9px;
+}
+.program-day .dots { display: flex; gap: 3px; }
+.program-day .group-dot { width: 6px; height: 6px; }
 .badge {
   font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
   padding: 3px 9px; border-radius: var(--r-pill); white-space: nowrap;
@@ -457,7 +502,7 @@ label.field > * { margin-top: 6px; }
 .lib-item:last-child { border-bottom: none; }
 .lib-item:hover { background: var(--surface-2); }
 .lib-item .eq-icon {
-  width: 40px; height: 40px; flex: 0 0 auto; border-radius: 11px; background: var(--surface-3);
+  width: 40px; height: 40px; flex: 0 0 auto; border-radius: 11px; background: var(--gc-weak, var(--surface-3));
   display: grid; place-items: center; color: var(--ink-muted); font-size: 11px; font-weight: 800;
 }
 .lib-item .eq-icon .m-ic { width: 28px; height: 28px; }
@@ -469,7 +514,7 @@ label.field > * { margin-top: 6px; }
 .volume-list { display: flex; flex-direction: column; gap: 13px; }
 .volume-row { display: grid; grid-template-columns: 116px 1fr auto; gap: 10px; align-items: center; }
 .vol-muscle { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 650; color: var(--ink-2); }
-.vol-muscle .m-plate { width: 30px; height: 30px; flex: 0 0 auto; border-radius: 8px; background: var(--surface-2); display: grid; place-items: center; }
+.vol-muscle .m-plate { width: 30px; height: 30px; flex: 0 0 auto; border-radius: 8px; background: var(--gc-weak, var(--surface-2)); display: grid; place-items: center; }
 .vol-muscle .m-plate .m-ic { width: 23px; height: 23px; }
 .vol-track {
   position: relative; height: 20px; border-radius: 6px; background: var(--surface-2);
