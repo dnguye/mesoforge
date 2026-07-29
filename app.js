@@ -562,20 +562,24 @@ function renderTrain() {
       ${nextDay ? `<button class="btn primary block" id="btn-hero-start" style="margin-top:14px">${icon('play','ic')} ${nextDay.w.entries.some(e => e.sets.length) ? 'Resume' : 'Start'} ${esc(nextDay.name)}</button>` : ''}
     </div>
 
-    <div class="section-title">Schedule</div>
-    <div class="week-strip">${weekPills}</div>
-    <div class="day-list" style="margin-top:12px">${days}</div>
+    <div class="train-sched">
+      <div class="section-title">Schedule</div>
+      <div class="week-strip">${weekPills}</div>
+      <div class="day-list" style="margin-top:12px">${days}</div>
+    </div>
 
-    <div class="section-title" style="margin-top:22px">This week’s volume</div>
-    <div class="card">
-      <div class="row wrap" style="margin-bottom:12px">${['push','pull','legs','core'].map(g => `<span class="group-chip g-${g}"><span class="group-dot"></span>${GROUP_LABEL[g]}</span>`).join('')}</div>
-      <div class="balance-grid">${balCells}</div>
-      <div class="balance-summary">
-        <span><b>${nOpt}</b> in range</span>
-        ${nUnder ? `<span style="color:var(--warn)"><b>${nUnder}</b> below target</span>` : ''}
-        ${nOver ? `<span style="color:var(--over)"><b>${nOver}</b> over</span>` : ''}
-        <span class="spacer"></span>
-        <span class="muted" style="font-size:12px">Tap → Progress</span>
+    <div class="train-vol">
+      <div class="section-title" style="margin-top:22px">This week’s volume</div>
+      <div class="card">
+        <div class="row wrap" style="margin-bottom:12px">${['push','pull','legs','core'].map(g => `<span class="group-chip g-${g}"><span class="group-dot"></span>${GROUP_LABEL[g]}</span>`).join('')}</div>
+        <div class="balance-grid">${balCells}</div>
+        <div class="balance-summary">
+          <span><b>${nOpt}</b> in range</span>
+          ${nUnder ? `<span style="color:var(--warn)"><b>${nUnder}</b> below target</span>` : ''}
+          ${nOver ? `<span style="color:var(--over)"><b>${nOver}</b> over</span>` : ''}
+          <span class="spacer"></span>
+          <span class="muted" style="font-size:12px">Tap → Progress</span>
+        </div>
       </div>
     </div>`;
 

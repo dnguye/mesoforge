@@ -1,5 +1,5 @@
 /* MesoForge service worker — cache-first app shell for offline use */
-const CACHE = 'mesoforge-v8';
+const CACHE = 'mesoforge-v9';
 const ASSETS = [
   './',
   './index.html',
