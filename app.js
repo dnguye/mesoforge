@@ -150,6 +150,19 @@ const gOf = (m) => MGROUP[m] || 'push';
 const gCls = (m) => 'g-' + gOf(m);
 const dayGroups = (day) => [...new Set(day.slots.map(s => gOf(s.muscle)))];
 
+/* weekday scheduling (Mon = 0 … Sun = 6) */
+const WD_ABBR = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+const WD_FULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const DEFAULT_WD = { 3:[0,2,4], 4:[0,1,3,4], 5:[0,1,2,3,4], 6:[0,1,2,3,4,5] };
+const todayWd = () => (new Date().getDay() + 6) % 7;
+/* migrate mesos created before weekday scheduling existed */
+function ensureWeekdays(meso) {
+  if (meso.days.every(d => Number.isInteger(d.weekday))) return;
+  const defs = DEFAULT_WD[meso.days.length] || meso.days.map((_, i) => i % 7);
+  meso.days.forEach((d, i) => { d.weekday = defs[i] ?? i % 7; });
+  saveMeso(meso);
+}
+
 /* ============================ SF-style glyphs ============================ */
 const I = {
   dumbbell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg>',
@@ -164,6 +177,7 @@ const I = {
   book:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15.5H6.5A2.5 2.5 0 0 0 4 21z"/></svg>',
   cal:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M8 2.5v3.5M16 2.5v3.5M3.5 9.5h17"/></svg>',
   lock:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="11" width="13" height="9" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg>',
+  grip:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 9h14M5 15h14"/></svg>',
 };
 const icon = (name, cls='') => `<span class="${cls}" aria-hidden="true" style="display:inline-flex">${I[name] || ''}</span>`;
 const tile = (m, extra='') => `<span class="tile ${gCls(m)} ${extra}">${I.dumbbell}</span>`;
@@ -218,6 +232,7 @@ const S = {
   workouts: [],
   settings: { units:'lb', theme:'auto' },
   tab: 'train',
+  trainView: 'list',   // 'list' | 'week' (calendar)
   activeWorkoutId: null,
   planWeek: null,
   progressMuscle: 'Chest',
@@ -478,6 +493,7 @@ function renderTrain() {
     return;
   }
 
+  ensureWeekdays(meso);
   const cw = currentWeek(meso);
   const viewWeek = S.planWeek || cw;
   const rir = targetRIR(meso, viewWeek);
@@ -561,8 +577,15 @@ function renderTrain() {
     </div>
 
     <div class="group">
-      <div class="group-header">Schedule</div>
-      <div class="list">${dayRows}</div>
+      <div class="group-header" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Schedule</span>
+        <span class="seg" id="seg-view" style="width:150px;text-transform:none;letter-spacing:0">
+          <button data-view="list" class="${S.trainView === 'list' ? 'active' : ''}">List</button>
+          <button data-view="week" class="${S.trainView === 'week' ? 'active' : ''}">Week</button>
+        </span>
+      </div>
+      ${S.trainView === 'week' ? `<div class="list" id="cal-list">${calRows(meso, viewWeek, cw)}</div>` : `<div class="list">${dayRows}</div>`}
+      ${S.trainView === 'week' ? '<div class="group-footer">Tap a workout to open it. Drag the handle to move it to another day — dropping on an occupied day swaps them.</div>' : ''}
       ${deload ? '<div class="group-footer">Deload week — half volume, light loads, leave 4+ reps in reserve.</div>' : ''}
     </div>
 
@@ -574,11 +597,114 @@ function renderTrain() {
 
   if (nextDay) $('#btn-hero-start').onclick = () => { S.activeWorkoutId = nextDay.w.id; switchTab('workout'); };
   $$('#seg-week button', el).forEach(b => b.onclick = () => { S.planWeek = +b.dataset.week; renderTrain(); });
+  $$('#seg-view button', el).forEach(b => b.onclick = () => { S.trainView = b.dataset.view; renderTrain(); });
   $$('[data-day]', el).forEach(b => b.onclick = () => {
     const w = getWorkout(meso, viewWeek, +b.dataset.day);
     if (!w) return;
     S.activeWorkoutId = w.id;
     switchTab('workout');
+  });
+  if (S.trainView === 'week') wireCalendar(el, meso, viewWeek);
+}
+
+/* --- calendar week view --- */
+function calRows(meso, viewWeek, cw) {
+  return Array.from({ length: 7 }, (_, wd) => {
+    const di = meso.days.findIndex(d => d.weekday === wd);
+    const day = di >= 0 ? meso.days[di] : null;
+    let inner;
+    if (!day) {
+      inner = '<div class="cal-rest">Rest</div>';
+    } else {
+      const w = getWorkout(meso, viewWeek, di);
+      const done = w && w.status === 'done';
+      const ready = !!w;
+      const names = day.slots.map(s => exById(s.exerciseId)?.name).filter(Boolean);
+      const summary = names.slice(0, 2).join(', ') + (names.length > 2 ? ` +${names.length - 2}` : '');
+      const totalSets = w ? w.entries.reduce((a, e) => a + (done ? e.sets.filter(s => s.done).length : e.targetSets), 0) : 0;
+      const g = dayGroups(day)[0] || 'push';
+      const st = done ? '<span class="st done">✓ Done</span>' : !ready ? '' : '<span class="st">' + totalSets + ' sets</span>';
+      inner = `
+        <div class="cal-card" data-di="${di}" role="button" tabindex="0">
+          <span class="tile g-${g}">${done ? I.check : I.dumbbell}</span>
+          <span class="cc-main">
+            <span class="cc-title">${esc(day.name)} ${st}</span>
+            <span class="cc-sub" style="display:block">${esc(summary)}</span>
+          </span>
+          <span class="grip" data-grip aria-label="Drag to move day">${I.grip}</span>
+        </div>`;
+    }
+    return `
+      <div class="cal-row" data-wd="${wd}">
+        <div class="cal-day ${wd === todayWd() ? 'today' : ''}"><div class="wd">${WD_ABBR[wd]}</div></div>
+        ${inner}
+      </div>`;
+  }).join('');
+}
+
+function wireCalendar(el, meso, viewWeek) {
+  // tap to open
+  $$('.cal-card', el).forEach(card => card.addEventListener('click', (e) => {
+    if (e.target.closest('[data-grip]')) return;
+    const w = getWorkout(meso, viewWeek, +card.dataset.di);
+    if (!w) return;
+    S.activeWorkoutId = w.id;
+    switchTab('workout');
+  }));
+
+  // pointer-based drag & drop (touch + mouse)
+  let drag = null;
+  const rowUnder = (x, y) => document.elementsFromPoint(x, y).find(n => n.classList && n.classList.contains('cal-row'));
+  $$('[data-grip]', el).forEach(grip => {
+    const card = grip.closest('.cal-card');
+    const di = +card.dataset.di;
+
+    grip.addEventListener('pointerdown', (ev) => {
+      ev.preventDefault();
+      const rect = card.getBoundingClientRect();
+      const ghost = card.cloneNode(true);
+      ghost.classList.add('cal-ghost');
+      ghost.style.width = rect.width + 'px';
+      ghost.style.left = rect.left + 'px';
+      ghost.style.top = rect.top + 'px';
+      document.body.appendChild(ghost);
+      card.classList.add('cal-src');
+      drag = { ghost, offX: ev.clientX - rect.left, offY: ev.clientY - rect.top };
+      grip.setPointerCapture(ev.pointerId);
+      haptic(8);
+    });
+
+    grip.addEventListener('pointermove', (ev) => {
+      if (!drag) return;
+      drag.ghost.style.left = (ev.clientX - drag.offX) + 'px';
+      drag.ghost.style.top = (ev.clientY - drag.offY) + 'px';
+      const r = rowUnder(ev.clientX, ev.clientY);
+      $$('.cal-row', el).forEach(x => x.classList.toggle('drop', x === r && +x.dataset.wd !== meso.days[di].weekday));
+    });
+
+    const finish = (ev, commit) => {
+      if (!drag) return;
+      const r = commit ? rowUnder(ev.clientX, ev.clientY) : null;
+      drag.ghost.remove();
+      card.classList.remove('cal-src');
+      $$('.cal-row', el).forEach(x => x.classList.remove('drop'));
+      drag = null;
+      if (r) {
+        const wd = +r.dataset.wd;
+        const from = meso.days[di].weekday;
+        if (wd !== from) {
+          const other = meso.days.findIndex(d => d.weekday === wd);
+          meso.days[di].weekday = wd;
+          if (other >= 0) meso.days[other].weekday = from;   // swap occupied days
+          saveMeso(meso);
+          haptic([8, 30, 8]);
+          toast(other >= 0 ? 'Days swapped' : `Moved to ${WD_FULL[wd]}`);
+        }
+      }
+      renderTrain();
+    };
+    grip.addEventListener('pointerup', (ev) => finish(ev, true));
+    grip.addEventListener('pointercancel', (ev) => finish(ev, false));
   });
 }
 
@@ -972,10 +1098,11 @@ function renderWizard() {
   $('#wiz-create').onclick = () => {
     S.mesos.forEach(m => { if (m.status === 'active') { m.status = 'paused'; saveMeso(m); } });
     const ramp = RIR_RAMPS.find(r => r.id === WIZ.ramp) || RIR_RAMPS[0];
+    const defWd = DEFAULT_WD[WIZ.template.plan.length] || WIZ.template.plan.map((_, i) => i % 7);
     const meso = {
       id: uid(), name: WIZ.name, created: todayISO(), status: 'active',
       weeks: WIZ.weeks, rirStart: ramp.start, rirEnd: ramp.end,
-      days: WIZ.template.plan.map((day, di) => ({ name: day.name, slots: WIZ.slots[di] })),
+      days: WIZ.template.plan.map((day, di) => ({ name: day.name, slots: WIZ.slots[di], weekday: defWd[di] ?? di % 7 })),
     };
     S.mesos.push(meso);
     saveMeso(meso);
